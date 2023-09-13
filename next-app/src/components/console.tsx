@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-query';
 import { AxiosResponse } from 'axios';
 import { useEffect, useRef, useState } from 'react';
+import { ConsoleCommand } from './console-command';
 
 interface ConsoleProps {
   isOnline: boolean;
@@ -26,20 +27,8 @@ export function Console({
   fetchConsole,
   executeCommand,
 }: ConsoleProps) {
-  const [command, setCommand] = useState<string>('');
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const textareaRef = useRef(null);
-
-  let cmdMutation:
-    | UseMutationResult<AxiosResponse<any, any>, unknown, string, unknown>
-    | undefined;
-
-  if (executeCommand) {
-    cmdMutation = useMutation({
-      mutationFn: (command: string) => executeCommand(command),
-      onSuccess: () => setCommand(''),
-    });
-  }
 
   const consoleQuery = useQuery({
     queryKey: ['console'],
@@ -59,7 +48,7 @@ export function Console({
     return () => {
       socket.off(`${game}/consoleOutput`);
     };
-  }, []);
+  }, [game]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -82,25 +71,11 @@ export function Console({
             className="h-[300px]"
             value={consoleLogs.join('')}
           />
-          {cmdMutation && (
-            <div className="flex my-2 gap-x-2">
-              <Input
-                type="text"
-                placeholder="Enter command here..."
-                value={command}
-                onChange={(e) => setCommand(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.code === 'Enter') cmdMutation!.mutate(command);
-                }}
-              />
-              <Button
-                disabled={!isOnline}
-                variant={'outline'}
-                onClick={() => cmdMutation!.mutate(command)}
-              >
-                Execute
-              </Button>
-            </div>
+          {executeCommand && (
+            <ConsoleCommand
+              isOnline={isOnline}
+              executeCommand={executeCommand}
+            />
           )}
         </div>
       )}
