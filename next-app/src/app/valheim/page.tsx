@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
-import { Dashboard } from './_components/dashboard';
+import { ActionProvider } from './_components/action-provider';
 
 export default async function ValheimControlPage() {
   const session = await getServerSession();
@@ -9,7 +9,7 @@ export default async function ValheimControlPage() {
 
   return (
     <main>
-      <Dashboard />
+      <ActionProvider />
     </main>
   );
 }

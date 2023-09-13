@@ -1,14 +1,22 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { Button } from '../../../components/ui/button';
-import { restart, start, stop } from '@/api/minecraft';
+import { Button } from './ui/button';
+import { AxiosResponse } from 'axios';
 
 interface ServerActionsProps {
   isOnline: boolean;
+  start: () => Promise<AxiosResponse<any, any>>;
+  stop: () => Promise<AxiosResponse<any, any>>;
+  restart: () => Promise<AxiosResponse<any, any>>;
 }
 
-export function ServerActions({ isOnline }: ServerActionsProps) {
+export function ServerActions({
+  isOnline,
+  start,
+  stop,
+  restart,
+}: ServerActionsProps) {
   const startMutation = useMutation(start);
 
   const stopMutation = useMutation(stop);

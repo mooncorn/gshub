@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
-import { Dashboard } from './_components/dashboard';
+
+import { ActionProvider } from './_components/action-provider';
 
 export default async function MinecraftControlPage() {
   const session = await getServerSession();
@@ -9,7 +10,7 @@ export default async function MinecraftControlPage() {
 
   return (
     <main>
-      <Dashboard />
+      <ActionProvider />
     </main>
   );
 }

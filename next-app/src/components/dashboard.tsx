@@ -1,18 +1,37 @@
 'use client';
 
-import { ServerActions } from '@/app/minecraft/_components/server-actions';
+import { ServerActions } from '@/components/server-actions';
 import { ServerStatus } from '@/components/server-status';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { status as fetchStatus } from '@/api/minecraft';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Console } from './console';
 import { Spinner } from '@/components/spinner';
 import { FileExplorer } from '@/components/file-explorer/file-exporer';
 import { getFiles } from '@/api/file-explorer/files';
 import { getFileContent } from '@/api/file-explorer/file';
+import { GetStatusData } from '@/api';
+import { Console } from '@/components/console';
+import { AxiosResponse } from 'axios';
 
-export function Dashboard() {
+interface DashboardProps {
+  game: string;
+  fetchStatus: () => Promise<GetStatusData>;
+  fetchConsole: () => Promise<{ console: string }>;
+  executeCommand?: (cmd: string) => Promise<AxiosResponse<any, any>>;
+  start: () => Promise<AxiosResponse<any, any>>;
+  stop: () => Promise<AxiosResponse<any, any>>;
+  restart: () => Promise<AxiosResponse<any, any>>;
+}
+
+export function Dashboard({
+  game,
+  fetchConsole,
+  fetchStatus,
+  executeCommand,
+  start,
+  stop,
+  restart,
+}: DashboardProps) {
   const [status, setStatus] = useState(false);
 
   const statusQuery = useQuery({
@@ -26,7 +45,7 @@ export function Dashboard() {
       <div className="flex flex-col md:flex-row justify-between my-3">
         <div className="flex items-center gap-x-2">
           <div className="prose dark:prose-invert prose-sm md:prose-base">
-            <h1 className="">Minecraft</h1>
+            <h1 className="">{game}</h1>
           </div>
 
           {statusQuery.isLoading ? (
@@ -44,7 +63,12 @@ export function Dashboard() {
           {statusQuery.isLoading ? (
             <Spinner />
           ) : (
-            <ServerActions isOnline={status} />
+            <ServerActions
+              isOnline={status}
+              start={start}
+              stop={stop}
+              restart={restart}
+            />
           )}
         </div>
       </div>
@@ -55,11 +79,16 @@ export function Dashboard() {
           <TabsTrigger value="files">Files</TabsTrigger>
         </TabsList>
         <TabsContent value="console">
-          <Console isOnline={status} />
+          <Console
+            game={game}
+            isOnline={status}
+            fetchConsole={fetchConsole}
+            executeCommand={executeCommand}
+          />
         </TabsContent>
         <TabsContent value="files">
           <FileExplorer
-            game="minecraft"
+            game={game}
             fetchFiles={getFiles}
             fetchFileContent={getFileContent}
           />
