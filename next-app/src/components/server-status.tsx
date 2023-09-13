@@ -16,12 +16,12 @@ export function ServerStatus({ name, status, setStatus }: ServerStatusProps) {
 
     const lowerCaseName = name.toLowerCase();
 
-    socket.on(`${lowerCaseName}/started`, () => setStatus(true));
-    socket.on(`${lowerCaseName}/stopped`, () => setStatus(false));
+    socket.on(`${lowerCaseName}/statusChanged`, (status) =>
+      setStatus(status === 'online' ? true : false)
+    );
 
     return () => {
-      socket.off(`${lowerCaseName}/started`);
-      socket.off(`${lowerCaseName}/stopped`);
+      socket.off(`${lowerCaseName}/statusChanged`);
     };
   }, []);
 

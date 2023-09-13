@@ -9,9 +9,9 @@ router.post(
   '/api/minecraft/start',
   currentUser,
   requireAuth,
-  (req: Request, res: Response) => {
+  (_: Request, res: Response) => {
     minecraftServer.start();
-    res.json({ message: 'Minecraft server startup initiated' });
+    res.json({ message: 'Server startup initiated' });
   }
 );
 

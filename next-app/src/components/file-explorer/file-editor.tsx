@@ -11,9 +11,24 @@ import { useToast } from '../ui/use-toast';
 
 interface FileEditorProps extends React.HTMLAttributes<HTMLDivElement> {
   pathItems: string[];
-  fetchFileContent: (path: string) => Promise<GetFileContentData>;
-  updateFileContent: (path: string, content: string) => Promise<any>;
+  fetchFileContent: ({
+    game,
+    path,
+  }: {
+    path: string;
+    game: string;
+  }) => Promise<GetFileContentData>;
+  updateFileContent: ({
+    path,
+    content,
+    game,
+  }: {
+    path: string;
+    content: string;
+    game: string;
+  }) => Promise<any>;
   onClose: () => void;
+  game: string;
 }
 
 export function FileEditor({
@@ -22,6 +37,7 @@ export function FileEditor({
   updateFileContent,
   onClose,
   className,
+  game,
   ...props
 }: FileEditorProps) {
   const [fileContent, setFileContent] = useState('');
@@ -30,7 +46,7 @@ export function FileEditor({
 
   const fileContentQuery = useQuery({
     queryKey: ['file', toPath(pathItems)],
-    queryFn: ({ queryKey }) => fetchFileContent(queryKey[1]!),
+    queryFn: ({ queryKey }) => fetchFileContent({ path: queryKey[1]!, game }),
     onSuccess: (data) => {
       setFileContent(data.content);
       setModifiedFileContent(data.content);
@@ -40,7 +56,7 @@ export function FileEditor({
 
   const updateFileContentMutation = useMutation({
     mutationFn: ({ path, content }: { path: string; content: string }) =>
-      updateFileContent(path, content),
+      updateFileContent({ path, content, game }),
     onSuccess: () => {
       toast({ title: 'File saved successfully' });
       fileContentQuery.refetch();

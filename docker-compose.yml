@@ -1,9 +1,9 @@
 version: "3.9"
 
 services:
-  gameserverhub:
+  postgres:
     image: postgres:latest
-    container_name: gameserverhub-postgres
+    container_name: postgres
     restart: always
     environment: 
       POSTGRES_PASSWORD: example
@@ -12,6 +12,21 @@ services:
       - "5432:5432"
     volumes:
       - postgres:/data/postgres
+
+  valheim-server:
+    image: lloesche/valheim-server
+    container_name: valheim-server
+    cap_add:
+      - sys_nice
+    stop_grace_period: 120s
+    ports:
+      - "2456-2457:2456-2457/udp"
+    volumes:
+      - C:/Users/hidas/Documents/GitHub/gshub/gameservers/valheim/data:/opt/valheim
+    environment:
+      SERVER_NAME: "DevServer"
+      WORLD_NAME: "DevWorld"
+      SERVER_PASS: "${SERVER_PASS}"
 
 volumes:
   postgres:

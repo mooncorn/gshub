@@ -10,24 +10,16 @@ socket.on('minecraft/consoleOutput', (data) => {
   console.log(data);
 });
 
-socket.on('minecraft/started', () => {
-  console.log('MINECRAFT SERVER STARTED\n');
-});
-
-socket.on('minecraft/stopped', () => {
-  console.log('MINECRAFT SERVER STOPPED\n');
+socket.on('minecraft/statusChanged', (status) => {
+  console.log(`MINECRAFT SERVER STATUS CHANGED: ${status}\n`);
 });
 
 socket.on('valheim/consoleOutput', (data) => {
   console.log(data);
 });
 
-socket.on('valheim/started', () => {
-  console.log('VALHEIM SERVER STARTED\n');
-});
-
-socket.on('valheim/stopped', () => {
-  console.log('VALHEIM SERVER STOPPED\n');
+socket.on('valheim/statusChanged', (status) => {
+  console.log(`VALHEIM SERVER STATUS CHANGED: ${status}\n`);
 });
 
 socket.on('disconnect', () => {

@@ -1,16 +1,16 @@
 'use client';
 
-import { ServerActions } from '@/app/minecraft/_components/server-actions';
 import { ServerStatus } from '@/components/server-status';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { status as fetchStatus } from '@/api/minecraft';
+import { status as fetchStatus } from '@/api/valheim';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Console } from './console';
 import { Spinner } from '@/components/spinner';
 import { FileExplorer } from '@/components/file-explorer/file-exporer';
 import { getFiles } from '@/api/file-explorer/files';
 import { getFileContent } from '@/api/file-explorer/file';
+import { ServerActions } from './server-actions';
 
 export function Dashboard() {
   const [status, setStatus] = useState(false);
@@ -26,14 +26,14 @@ export function Dashboard() {
       <div className="flex flex-col md:flex-row justify-between my-3">
         <div className="flex items-center gap-x-2">
           <div className="prose dark:prose-invert prose-sm md:prose-base">
-            <h1 className="">Minecraft</h1>
+            <h1 className="">Valheim</h1>
           </div>
 
           {statusQuery.isLoading ? (
             <Spinner />
           ) : (
             <ServerStatus
-              name="minecraft"
+              name="valheim"
               status={status}
               setStatus={setStatus}
             />
@@ -55,11 +55,11 @@ export function Dashboard() {
           <TabsTrigger value="files">Files</TabsTrigger>
         </TabsList>
         <TabsContent value="console">
-          <Console isOnline={status} />
+          <Console />
         </TabsContent>
         <TabsContent value="files">
           <FileExplorer
-            game="minecraft"
+            game="valheim"
             fetchFiles={getFiles}
             fetchFileContent={getFileContent}
           />

@@ -9,10 +9,8 @@ router.get(
   '/api/minecraft/status',
   currentUser,
   requireAuth,
-  (req: Request, res: Response) => {
-    minecraftServer.process
-      ? res.json({ status: 'online' })
-      : res.json({ status: 'offline' });
+  (_: Request, res: Response) => {
+    res.json({ status: minecraftServer.getStatus() });
   }
 );
 

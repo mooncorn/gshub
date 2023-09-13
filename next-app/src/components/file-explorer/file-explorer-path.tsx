@@ -17,7 +17,12 @@ export function FileExplorerPath({
   const renderPathItems = () =>
     items.map((pathItem, index) => (
       <>
-        <Button className="px-0" variant="link" disabled key={'/' + pathItem}>
+        <Button
+          className="px-0"
+          variant="link"
+          disabled
+          key={'path/' + pathItem}
+        >
           /
         </Button>
         <Button

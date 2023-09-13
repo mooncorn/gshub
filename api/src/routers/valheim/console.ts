@@ -1,17 +1,17 @@
 import express, { Request, Response } from 'express';
-import { minecraftServer } from '../../app';
+import { valheimServer } from '../../app';
 import { currentUser } from '../../middleware/current-user';
 import { requireAuth } from '../../middleware/require-auth';
 
 const router = express.Router();
 
 router.get(
-  '/api/minecraft/console',
+  '/api/valheim/console',
   currentUser,
   requireAuth,
   async (_: Request, res: Response) => {
-    res.json({ console: (await minecraftServer.getLogs()) ?? '' });
+    res.json({ console: await valheimServer.getLogs(50) });
   }
 );
 
-export { router as minecraftConsoleRouter };
+export { router as valheimConsoleRouter };

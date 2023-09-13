@@ -1,7 +1,15 @@
 import { base } from '../base';
 
-export async function updateFile(path: string, content: string) {
-  return await base.put(`/minecraft/file-explorer/file?path=${path}`, {
+export async function updateFile({
+  game,
+  path,
+  content,
+}: {
+  path: string;
+  game: string;
+  content: string;
+}) {
+  return await base.put(`/${game}/file-explorer/file?path=${path}`, {
     content,
   });
 }

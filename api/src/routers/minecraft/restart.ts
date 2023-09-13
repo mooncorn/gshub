@@ -9,7 +9,7 @@ router.post(
   '/api/minecraft/restart',
   currentUser,
   requireAuth,
-  (req: Request, res: Response) => {
+  (_: Request, res: Response) => {
     minecraftServer.restart();
     res.json({ message: 'Server restart initiated' });
   }

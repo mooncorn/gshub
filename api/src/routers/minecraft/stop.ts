@@ -9,9 +9,9 @@ router.post(
   '/api/minecraft/stop',
   currentUser,
   requireAuth,
-  (req: Request, res: Response) => {
+  (_: Request, res: Response) => {
     minecraftServer.stop();
-    res.json({ message: 'Minecraft server shutdown initiated' });
+    res.json({ message: 'Server shutdown initiated' });
   }
 );
 

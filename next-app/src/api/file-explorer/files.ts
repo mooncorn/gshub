@@ -12,7 +12,13 @@ export interface GetFilesData {
   files: FileData[];
 }
 
-export async function getFiles(path: string): Promise<GetFilesData> {
-  const res = await base.get(`/minecraft/file-explorer?path=${path}`);
+export async function getFiles({
+  game,
+  path,
+}: {
+  game: string;
+  path: string;
+}): Promise<GetFilesData> {
+  const res = await base.get(`/${game}/file-explorer?path=${path}`);
   return res.data;
 }

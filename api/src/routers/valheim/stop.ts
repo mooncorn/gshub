@@ -7,13 +7,13 @@ import { BadRequestError } from '../../lib/exceptions/bad-request-error';
 const router = express.Router();
 
 router.post(
-  '/api/valheim/start',
+  '/api/valheim/stop',
   currentUser,
   requireAuth,
   async (_: Request, res: Response) => {
     try {
-      await valheimServer.start();
-      res.json({ message: 'Server startup initiated' });
+      await valheimServer.stop();
+      res.json({ message: 'Server stopped' });
     } catch (err) {
       if (err instanceof BadRequestError) res.json({ message: err.message });
       else throw err;
@@ -21,4 +21,4 @@ router.post(
   }
 );
 
-export { router as valheimStartRouter };
+export { router as valheimStopRouter };

@@ -1,176 +1,135 @@
-import { ChildProcess, exec } from 'child_process';
-import path from 'path';
-import fs from 'fs/promises';
 import { Server } from 'socket.io';
+import Docker, { Container } from 'dockerode';
+import { GameServerStatus } from './game-server';
 import { ServerOfflineError } from './exceptions/server-offline-error';
-import { ServerOnlineError } from './exceptions/server-online-error';
-import { mapToGameDirectory } from './utils';
+import { InternalError } from './exceptions/internal-error';
+import { Writable } from 'stream';
+import { BadRequestError } from './exceptions/bad-request-error';
 
-const NAME = 'valheim';
-const VALHEIM_SERVER_DIR = mapToGameDirectory(NAME);
-const VALHEIM_CONSOLE_OUTPUT_EVENT = 'valheim/consoleOutput';
-const VALHEIM_STARTED_EVENT = 'valheim/started';
-const VALHEIM_STOPPED_EVENT = 'valheim/stopped';
-
-// const MINECRAFT_CONSOLE_LOGS_PATH = path.join(
-//   process.cwd(),
-//   '../gameservers/minecraft/logs/latest.log'
-// );
-
-// export type LevelType =
-//   | 'normal'
-//   | 'flat'
-//   | 'large_biomes'
-//   | 'amplified'
-//   | 'single_biome_surface';
-
-// interface EditableProperties {
-//   name: string;
-//   seed?: string;
-//   type?: LevelType;
-//   generateStructures?: boolean;
-// }
+const docker = new Docker();
 
 export class ValheimServer {
-  private _process?: ChildProcess;
+  private _io: Server;
+  private _container: Container | undefined;
+  public status: GameServerStatus;
 
-  constructor(private _io: Server) {}
+  constructor(io: Server) {
+    this._io = io;
+    this.status = GameServerStatus.OFFLINE;
 
-  public get process(): ChildProcess | undefined {
-    return this._process;
+    this.init();
   }
 
-  public start(): void {
-    if (this._process) throw new ServerOnlineError();
+  private stdoutStream = new Writable({
+    write: (chunk, _, callback) => {
+      this._io.emit('valheim/consoleOutput', chunk.toString()); // Emitting the output as an event for STDOUT
+      callback();
+    },
+  });
 
-    const valheimStartCommand = 'StartServer.bat';
-    const options = { cwd: VALHEIM_SERVER_DIR };
+  private async init() {
+    const containers = await docker.listContainers({
+      all: true,
+    });
+    const valheimContainer = containers.find((container) =>
+      container.Names.includes('/valheim-server')
+    );
 
-    // Initiate server startup
-    this._process = exec(
-      valheimStartCommand,
-      options,
-      (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          return;
-        }
-        console.log(`stdout: ${stdout}`);
-        console.error(`stderr: ${stderr}`);
+    if (!valheimContainer)
+      throw new InternalError('Could not find valheim server container');
+
+    this._container = docker.getContainer(valheimContainer.Id);
+
+    this._container.attach(
+      {
+        stream: true,
+        stdin: true,
+        stdout: true,
+        stderr: true,
+      },
+      (_, stream) => {
+        this._container?.modem.demuxStream(
+          stream,
+          this.stdoutStream,
+          this.stdoutStream
+        );
       }
     );
 
-    this._process.on('error', (err) => {
-      console.log('Process error: ', err.message);
-      this._process = undefined;
-      this._io.emit(VALHEIM_STOPPED_EVENT);
-    });
-
-    this._process.on('exit', (code) => {
-      if (code !== 0) {
-        // If the exit code isn't 0, something went wrong
-        this._process = undefined;
-        this._io.emit(VALHEIM_STOPPED_EVENT);
-      }
-    });
-
-    this._process.on('close', () => {
-      this._process = undefined; // Reset the reference to the process
-      this._io.emit(VALHEIM_STOPPED_EVENT);
-    });
-
-    this._io.emit(VALHEIM_STARTED_EVENT);
-
-    this._process.stdout?.on('data', (data) => {
-      // Emit console output to Socket.io clients
-      this._io.emit(VALHEIM_CONSOLE_OUTPUT_EVENT, data.toString());
-    });
+    this.setStatus(await this.getStatus());
   }
 
-  // public stop(): void {
-  //   if (!this._process) throw new ServerOfflineError();
+  public async start() {
+    if (!this._container)
+      throw new InternalError('Valheim server container was not initialized');
 
-  //   this._process.stdin?.write('stop\n'); // Send the "stop" command
-  // }
+    if (this.status === GameServerStatus.ONLINE)
+      throw new BadRequestError('Server is already online');
 
-  // public execute(cmd: string): void {
-  //   if (!this._process) throw new ServerOfflineError();
+    try {
+      await this._container.start();
+      this.setStatus(GameServerStatus.ONLINE);
+    } catch (err) {
+      console.log('Failed to start server: ', err);
+      throw new BadRequestError('Failed to start server');
+    }
+  }
 
-  //   this._io.emit(
-  //     MINECRAFT_CONSOLE_OUTPUT_EVENT,
-  //     `Executing command: ${cmd}\n`
-  //   );
+  public async stop() {
+    if (!this._container)
+      throw new InternalError('Valheim server container was not initialized');
 
-  //   this._process.stdin?.write(`${cmd}\n`);
-  // }
+    if (this.status === GameServerStatus.OFFLINE)
+      throw new BadRequestError('Server is already offline');
 
-  // public async getLogs(): Promise<string | undefined> {
-  //   try {
-  //     return await fs.readFile(MINECRAFT_CONSOLE_LOGS_PATH, 'utf-8');
-  //   } catch (err) {
-  //     console.log(err);
-  //     return undefined;
-  //   }
-  // }
+    try {
+      await this._container.stop();
+      this.setStatus(GameServerStatus.OFFLINE);
+    } catch (err) {
+      console.log('Failed to stop server: ', err);
+      throw new BadRequestError('Failed to stop server');
+    }
+  }
 
-  // public async restart(): Promise<void> {
-  //   try {
-  //     await this.stop();
-  //   } catch (err) {
-  //     if (!(err instanceof ServerOfflineError)) throw err;
-  //   }
-  //   this.start();
-  // }
+  public async restart(): Promise<void> {
+    try {
+      await this.stop();
+    } catch (err) {
+      if (!(err instanceof BadRequestError)) throw err;
+    }
+    await this.start();
+  }
 
-  // public async edit({
-  //   name,
-  //   seed,
-  //   type,
-  //   generateStructures,
-  // }: EditableProperties) {
-  //   const propertiesFilePath = path.join(
-  //     MINECRAFT_SERVER_DIR,
-  //     'server.properties'
-  //   );
+  public async getLogs(limit?: number) {
+    if (!this._container) throw new ServerOfflineError();
 
-  //   let data: string;
+    const buffer = await this._container.logs({
+      follow: false, // Don't keep the connection open
+      stdout: true,
+      stderr: true,
+      tail: limit,
+    });
 
-  //   try {
-  //     data = await fs.readFile(propertiesFilePath, 'utf-8');
-  //   } catch (err) {
-  //     throw new Error('Could not read server.properties');
-  //   }
+    return buffer
+      .toString('utf-8')
+      .split('\n')
+      .map((line) => line.slice(8, line.length))
+      .join('\n');
+  }
 
-  //   try {
-  //     // Parse the existing properties
-  //     const existingProperties = data
-  //       .split('\n')
-  //       .reduce((acc: { [key: string]: string }, line) => {
-  //         const [key, value] = line.split('=');
-  //         if (key && value) {
-  //           acc[key.trim()] = value.trim();
-  //         }
-  //         return acc;
-  //       }, {});
+  public async getStatus() {
+    const logs = await this.getLogs();
 
-  //     // Update properties with the new values
-  //     existingProperties['level-name'] = `world-${name}`;
-  //     existingProperties['level-type'] = type || '';
-  //     existingProperties['level-seed'] = seed || '';
-  //     existingProperties['generate-structures'] = String(
-  //       generateStructures || true
-  //     );
+    const startIndex = logs.lastIndexOf('Game server connected');
+    const stopIndex = logs.lastIndexOf('valheim-server (exit status 0)');
 
-  //     // Create a string representation of the updated properties
-  //     const updatedPropertiesString = Object.entries(existingProperties)
-  //       .map(([key, value]) => `${key}=${value}`)
-  //       .join('\n');
+    return startIndex > stopIndex
+      ? GameServerStatus.ONLINE
+      : GameServerStatus.OFFLINE;
+  }
 
-  //     // Write the updated properties back to the server.properties file
-  //     await fs.writeFile(propertiesFilePath, updatedPropertiesString, 'utf-8');
-  //   } catch (err) {
-  //     console.log(err);
-  //     throw new Error('Error updating server.properties');
-  //   }
-  // }
+  public setStatus(status: GameServerStatus) {
+    this.status = status;
+    this._io.emit('valheim/statusChanged', status);
+  }
 }

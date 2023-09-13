@@ -24,7 +24,7 @@ function sortFilesAndDirectories(files: FileData[]) {
   });
 }
 
-const READABLE_FILES_REGEX = new RegExp('.+\\.(json|txt|properties)');
+const READABLE_FILES_REGEX = new RegExp('.+\\.(json|txt|properties|yml)');
 
 export function toPath(pathItems: string[]): string {
   return '/' + pathItems.join('/');
@@ -37,11 +37,25 @@ export const canOpenFileOrDirectory = (file: FileData): boolean =>
   file.isDirectory || canReadFile(file.name);
 
 interface FileExplorerProps {
-  fetchFiles: (path: string) => Promise<GetFilesData>;
-  fetchFileContent: (path: string) => Promise<GetFileContentData>;
+  game: string;
+  fetchFiles: ({
+    path,
+    game,
+  }: {
+    path: string;
+    game: string;
+  }) => Promise<GetFilesData>;
+  fetchFileContent: ({
+    path,
+    game,
+  }: {
+    path: string;
+    game: string;
+  }) => Promise<GetFileContentData>;
 }
 
 export function FileExplorer({
+  game,
   fetchFiles,
   fetchFileContent,
 }: FileExplorerProps) {
@@ -51,7 +65,7 @@ export function FileExplorer({
 
   const filesQuery = useQuery({
     queryKey: ['files', toPath(pathItems)],
-    queryFn: (data) => fetchFiles(data.queryKey[1]!),
+    queryFn: (data) => fetchFiles({ path: data.queryKey[1]!, game }),
     onSuccess: (data) => setFiles(sortFilesAndDirectories(data.files)),
     enabled: !showFileEditor,
   });
@@ -90,6 +104,7 @@ export function FileExplorer({
       <FileExplorerPath items={pathItems} onClickedItem={onPathItemClick} />
       {showFileEditor ? (
         <FileEditor
+          game={game}
           pathItems={pathItems}
           fetchFileContent={fetchFileContent}
           updateFileContent={updateFile}

@@ -7,7 +7,9 @@ export type ReadFileReturnType =
   | { fileBuffer: Buffer; mimeType: string | null };
 
 // Regular expression to match file extensions that can be read
-export const READABLE_FILES_REGEX = new RegExp('.+\\.(json|txt|properties)');
+export const READABLE_FILES_REGEX = new RegExp(
+  '.+\\.(json|txt|properties|yml)'
+);
 
 export class FileExplorer {
   private _rootDir: string;

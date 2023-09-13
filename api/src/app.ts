@@ -15,12 +15,15 @@ import { minecraftStatusRouter } from './routers/minecraft/status';
 import { minecraftCmdRouter } from './routers/minecraft/cmd';
 import { minecraftConsoleRouter } from './routers/minecraft/console';
 import { minecraftRestartRouter } from './routers/minecraft/restart';
-import { minecraftEditRouter } from './routers/minecraft/edit';
 import { fileExplorerUpdateRouter } from './routers/files/update';
 import { fileExplorerListRouter } from './routers/files';
 import { fileExplorerFileRouter } from './routers/files/file';
 import { valheimStartRouter } from './routers/valheim/start';
 import { ValheimServer } from './lib/valheim-server';
+import { valheimConsoleRouter } from './routers/valheim/console';
+import { valheimStopRouter } from './routers/valheim/stop';
+import { valheimRestartRouter } from './routers/valheim/restart';
+import { valheimStatusRouter } from './routers/valheim/status';
 
 const app = express();
 const server = createServer(app);
@@ -47,19 +50,34 @@ app.use(
   })
 );
 
-app.use(minecraftStartRouter);
-app.use(minecraftStopRouter);
-app.use(minecraftStatusRouter);
-app.use(minecraftCmdRouter);
-app.use(minecraftConsoleRouter);
-app.use(minecraftRestartRouter);
-app.use(minecraftEditRouter);
+app.use([
+  minecraftStartRouter,
+  minecraftStopRouter,
+  minecraftStatusRouter,
+  minecraftCmdRouter,
+  minecraftConsoleRouter,
+  minecraftRestartRouter,
+]);
 
-app.use('/api/minecraft/file-explorer', fileExplorerListRouter);
-app.use('/api/minecraft/file-explorer', fileExplorerFileRouter);
-app.use('/api/minecraft/file-explorer', fileExplorerUpdateRouter);
+app.use([
+  valheimStartRouter,
+  valheimStopRouter,
+  valheimRestartRouter,
+  valheimStatusRouter,
+  valheimConsoleRouter,
+]);
 
-app.use(valheimStartRouter);
+app.use('/api/minecraft/file-explorer', [
+  fileExplorerListRouter,
+  fileExplorerFileRouter,
+  fileExplorerUpdateRouter,
+]);
+
+app.use('/api/valheim/file-explorer', [
+  fileExplorerListRouter,
+  fileExplorerFileRouter,
+  fileExplorerUpdateRouter,
+]);
 
 app.all('*', async () => {
   throw new NotFoundError();
