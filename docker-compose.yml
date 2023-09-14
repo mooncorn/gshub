@@ -6,7 +6,7 @@ services:
     container_name: postgres
     restart: always
     environment: 
-      POSTGRES_PASSWORD: example
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /data/postgres
     ports:
       - "5432:5432"
@@ -22,10 +22,10 @@ services:
     ports:
       - "2456-2457:2456-2457/udp"
     volumes:
-      - C:/Users/hidas/Documents/GitHub/gshub/gameservers/valheim/data:/opt/valheim
+      - ${DATA_DIR}:/opt/valheim
     environment:
-      SERVER_NAME: "DevServer"
-      WORLD_NAME: "DevWorld"
+      SERVER_NAME: "${SERVER_NAME}"
+      WORLD_NAME: "${WORLD_NAME}"
       SERVER_PASS: "${SERVER_PASS}"
 
 volumes:

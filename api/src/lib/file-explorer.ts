@@ -2,10 +2,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import { BadRequestError } from './exceptions/bad-request-error';
 
-export type ReadFileReturnType =
-  | string
-  | { fileBuffer: Buffer; mimeType: string | null };
-
 // Regular expression to match file extensions that can be read
 export const READABLE_FILES_REGEX = new RegExp(
   '.+\\.(json|txt|properties|yml)'
@@ -54,7 +50,7 @@ export class FileExplorer {
   }
 
   // Method to read the content of a file
-  async readFile(filePath: string): Promise<ReadFileReturnType> {
+  async readFile(filePath: string): Promise<string> {
     try {
       if (filePath.includes('..'))
         throw new BadRequestError('Cannot access parent directory');
