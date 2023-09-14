@@ -23,6 +23,7 @@ services:
       - "2456-2457:2456-2457/udp"
     volumes:
       - ${DATA_DIR}:/opt/valheim
+      - ${CONFIG_DIR}:/config
     environment:
       SERVER_NAME: "${SERVER_NAME}"
       WORLD_NAME: "${WORLD_NAME}"
