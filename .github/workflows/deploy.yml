@@ -1,9 +1,6 @@
 name: Deploy
 
-on:
-  push:
-    paths:
-      - 'api/**'
+on: push
 
 jobs:
   deploy:
