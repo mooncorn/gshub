@@ -10,8 +10,12 @@ router.post(
   currentUser,
   requireAuth,
   (_: Request, res: Response) => {
-    minecraftServer.start();
-    res.json({ message: 'Server startup initiated' });
+    try {
+      minecraftServer.start();
+      res.json({ message: 'Server startup initiated' });
+    } catch (err) {
+      if (err instanceof Error) res.status(400).json({ message: err.message });
+    }
   }
 );
 

@@ -10,8 +10,12 @@ router.post(
   currentUser,
   requireAuth,
   (_: Request, res: Response) => {
-    minecraftServer.stop();
-    res.json({ message: 'Server shutdown initiated' });
+    try {
+      minecraftServer.stop();
+      res.json({ message: 'Server shutdown initiated' });
+    } catch (err) {
+      if (err instanceof Error) res.status(400).json({ message: err.message });
+    }
   }
 );
 

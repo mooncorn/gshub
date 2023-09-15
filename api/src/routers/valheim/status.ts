@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-
 import { currentUser } from '../../middleware/current-user';
 import { requireAuth } from '../../middleware/require-auth';
 import { valheimServer } from '../../app';
@@ -11,7 +10,11 @@ router.get(
   currentUser,
   requireAuth,
   async (_: Request, res: Response) => {
-    res.json({ status: valheimServer.status });
+    try {
+      res.json({ status: valheimServer.status });
+    } catch (err) {
+      if (err instanceof Error) res.status(400).json({ message: err.message });
+    }
   }
 );
 

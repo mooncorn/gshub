@@ -10,7 +10,11 @@ router.get(
   currentUser,
   requireAuth,
   async (_: Request, res: Response) => {
-    res.json({ console: (await minecraftServer.getLogs()) ?? '' });
+    try {
+      res.json({ console: (await minecraftServer.getLogs(50)) ?? '' });
+    } catch (err) {
+      if (err instanceof Error) res.status(400).json({ message: err.message });
+    }
   }
 );
 

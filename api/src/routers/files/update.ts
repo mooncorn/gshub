@@ -1,11 +1,11 @@
 import express, { Request, Response } from 'express';
-import { mapToGameDirectory } from '../../lib/utils';
 import { FileExplorer } from '../../lib/file-explorer';
 import { body, query } from 'express-validator';
 import { validateRequest } from '../../middleware/validate-request';
 import { requireAdmin } from '../../middleware/require-admin';
 import { requireAuth } from '../../middleware/require-auth';
 import { currentUser } from '../../middleware/current-user';
+import { mapToGameDirectory } from '../../lib/utils';
 
 const router = express.Router();
 

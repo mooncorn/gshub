@@ -10,8 +10,12 @@ router.post(
   currentUser,
   requireAuth,
   (_: Request, res: Response) => {
-    minecraftServer.restart();
-    res.json({ message: 'Server restart initiated' });
+    try {
+      minecraftServer.restart();
+      res.json({ message: 'Server restart initiated' });
+    } catch (err) {
+      if (err instanceof Error) res.status(400).json({ message: err.message });
+    }
   }
 );
 

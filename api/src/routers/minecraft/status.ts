@@ -10,7 +10,11 @@ router.get(
   currentUser,
   requireAuth,
   (_: Request, res: Response) => {
-    res.json({ status: minecraftServer.getStatus() });
+    try {
+      res.json({ status: minecraftServer.status.toString() });
+    } catch (err) {
+      if (err instanceof Error) res.status(400).json({ message: err.message });
+    }
   }
 );
 

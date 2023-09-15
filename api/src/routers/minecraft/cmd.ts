@@ -26,7 +26,7 @@ router.post(
     const { cmd } = req.body;
 
     try {
-      await minecraftServer.execute(cmd);
+      await minecraftServer.executeCommand(cmd);
       res.send();
     } catch (err) {
       if (err instanceof Error) res.status(400).json({ message: err.message });

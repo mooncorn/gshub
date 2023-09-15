@@ -8,7 +8,6 @@ import { Server as SocketServer } from 'socket.io';
 import { createServer } from './lib/http-server';
 import { NotFoundError } from './lib/exceptions/not-found-error';
 import { errorHandler } from './middleware/error-handler';
-import { MinecraftServer } from './lib/minecraft-server';
 import { minecraftStartRouter } from './routers/minecraft/start';
 import { minecraftStopRouter } from './routers/minecraft/stop';
 import { minecraftStatusRouter } from './routers/minecraft/status';
@@ -19,11 +18,11 @@ import { fileExplorerUpdateRouter } from './routers/files/update';
 import { fileExplorerListRouter } from './routers/files';
 import { fileExplorerFileRouter } from './routers/files/file';
 import { valheimStartRouter } from './routers/valheim/start';
-import { ValheimServer } from './lib/valheim-server';
 import { valheimConsoleRouter } from './routers/valheim/console';
 import { valheimStopRouter } from './routers/valheim/stop';
 import { valheimRestartRouter } from './routers/valheim/restart';
 import { valheimStatusRouter } from './routers/valheim/status';
+import { createGameServers } from './lib/servers';
 
 const app = express();
 const server = createServer(app);
@@ -33,12 +32,7 @@ const io = new SocketServer(server, {
   },
 });
 
-const minecraftServer = new MinecraftServer(io);
-const valheimServer = new ValheimServer(io);
-
-process.on('SIGINT', async () => {
-  await minecraftServer.stop();
-});
+const { minecraftServer, valheimServer } = createGameServers(io);
 
 app.use(express.json());
 app.use(cookieParser());
