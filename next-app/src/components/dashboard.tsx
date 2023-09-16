@@ -51,11 +51,7 @@ export function Dashboard({
           {statusQuery.isLoading ? (
             <Spinner />
           ) : (
-            <ServerStatus
-              name="minecraft"
-              status={status}
-              setStatus={setStatus}
-            />
+            <ServerStatus name={game} status={status} setStatus={setStatus} />
           )}
         </div>
 
