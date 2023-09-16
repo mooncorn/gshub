@@ -22,11 +22,11 @@ router.post(
   requireAuth,
   requireAdmin,
   validateRequest(validations),
-  async (req: Request, res: Response) => {
+  (req: Request, res: Response) => {
     const { cmd } = req.body;
 
     try {
-      await minecraftServer.executeCommand(cmd);
+      minecraftServer.executeCommand(cmd);
       res.send();
     } catch (err) {
       if (err instanceof Error) res.status(400).json({ message: err.message });
