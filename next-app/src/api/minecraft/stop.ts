@@ -1,5 +1,5 @@
 import { base } from '..';
 
-export async function stop() {
-  return await base.post('/minecraft/stop');
+export async function stop({ id }: { id: string }) {
+  return await base.post(`/minecraft/servers/${id}/stop`);
 }

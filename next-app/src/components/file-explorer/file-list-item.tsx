@@ -1,6 +1,6 @@
 'use client';
 
-import { FileData } from '@/api/file-explorer/files';
+import { FileData } from '@/api/files/files';
 import { cn } from '@/lib/utils';
 import { FolderClosed } from 'lucide-react';
 import { TableCell, TableRow } from '../ui/table';

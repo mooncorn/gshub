@@ -14,20 +14,20 @@ export function ServerStatus({ name, status, setStatus }: ServerStatusProps) {
   useEffect(() => {
     socket.connect();
 
-    const lowerCaseName = name.toLowerCase();
-
-    socket.on(`${lowerCaseName}/statusChanged`, (status) =>
-      setStatus(status === 'online' ? true : false)
-    );
+    socket.on(`${name}/statusChanged`, (status) => {
+      setStatus(status === 'online' ? true : false);
+    });
 
     return () => {
-      socket.off(`${lowerCaseName}/statusChanged`);
+      socket.off(`${name}/statusChanged`);
     };
   }, []);
 
   return (
-    <Badge style={{ backgroundColor: status ? 'green' : 'red' }}>
-      {status ? 'Online' : 'Offline'}
-    </Badge>
+    <div className="m-auto">
+      <Badge style={{ backgroundColor: status ? 'green' : 'red' }}>
+        {status ? 'Online' : 'Offline'}
+      </Badge>
+    </div>
   );
 }

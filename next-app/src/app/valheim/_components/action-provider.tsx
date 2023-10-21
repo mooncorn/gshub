@@ -12,7 +12,7 @@ import {
 export function ActionProvider() {
   return (
     <Dashboard
-      game="valheim"
+      game="/valheim-server"
       fetchConsole={fetchConsole}
       fetchStatus={fetchStatus}
       start={start}

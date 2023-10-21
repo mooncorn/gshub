@@ -27,21 +27,36 @@ export function ServerActions({
     <div className="flex gap-x-2">
       <Button
         style={{ backgroundColor: 'green' }}
-        disabled={isOnline}
+        disabled={
+          isOnline ||
+          startMutation.isLoading ||
+          stopMutation.isLoading ||
+          restartMutation.isLoading
+        }
         onClick={() => startMutation.mutate()}
       >
         Start
       </Button>
       <Button
         variant={'destructive'}
-        disabled={!isOnline}
+        disabled={
+          !isOnline ||
+          startMutation.isLoading ||
+          stopMutation.isLoading ||
+          restartMutation.isLoading
+        }
         onClick={() => stopMutation.mutate()}
       >
         Stop
       </Button>
       <Button
         style={{ backgroundColor: 'orange' }}
-        disabled={!isOnline}
+        disabled={
+          !isOnline ||
+          startMutation.isLoading ||
+          stopMutation.isLoading ||
+          restartMutation.isLoading
+        }
         onClick={() => restartMutation.mutate()}
       >
         Restart

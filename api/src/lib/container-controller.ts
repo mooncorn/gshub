@@ -1,7 +1,7 @@
 import { InternalError } from './exceptions/internal-error';
 import { Container } from 'dockerode';
 import { docker } from './docker';
-import { getContainerInfo } from './utils';
+import { getContainerInfo, getFormattedTime } from './utils';
 import { EventEmitter } from 'stream';
 
 /**
@@ -16,6 +16,9 @@ export enum ContainerStatus {
  * Options to configure the ContainerController.
  */
 export interface ContainerControllerOptions {
+  /**
+   * Name of the container.
+   */
   containerName: string;
 }
 
@@ -38,7 +41,9 @@ export class ContainerController extends EventEmitter {
   /**
    * Name of the container to be watched.
    */
-  public readonly containerName: string;
+  public readonly name: string;
+
+  public id: string = '';
 
   /**
    * Creates a new ContainerController instance.
@@ -47,7 +52,7 @@ export class ContainerController extends EventEmitter {
    */
   constructor(opts: ContainerControllerOptions) {
     super();
-    this.containerName = opts.containerName;
+    this.name = opts.containerName;
     this._status = ContainerStatus.OFFLINE;
   }
 
@@ -55,26 +60,34 @@ export class ContainerController extends EventEmitter {
    * Initializes the ContainerController, fetching container information and setting up event listeners.
    */
   public async init(): Promise<void> {
-    const containerInfo = await getContainerInfo(this.containerName);
+    const containerInfo = await getContainerInfo(this.name);
 
     if (!containerInfo)
       throw new InternalError(
-        `Could not find container with this name: ${this.containerName}`
+        `Could not find container with this name: ${this.name}`
       );
 
-    this._container = docker.getContainer(containerInfo.Id);
+    this.id = containerInfo.Id;
 
-    this.attachStreams();
+    this._container = docker.getContainer(containerInfo.Id);
 
     const steam = await docker.getEvents();
     steam.on('data', this.handleDockerEvent);
 
     // check container's status
-    const found = await getContainerInfo(this.containerName, false);
+    const found = await getContainerInfo(this.name, false);
     const currentStatus = found
       ? ContainerStatus.ONLINE
       : ContainerStatus.OFFLINE;
     this.setStatus(currentStatus);
+
+    // only attach streams if the container is running
+    // to avoid attaching more than one output streams
+    if (this.status === ContainerStatus.ONLINE) this.attachStreams();
+  }
+
+  public disconnect() {
+    this.removeAllListeners();
   }
 
   /**
@@ -83,14 +96,14 @@ export class ContainerController extends EventEmitter {
   private handleDockerEvent = (data: any): void => {
     const event = JSON.parse(data.toString());
 
-    if (event.Actor.Attributes.name !== this.containerName) return;
+    if ('/' + event.Actor.Attributes.name !== this.name) return;
 
     switch (event.status) {
       case 'start':
         this.setStatus(ContainerStatus.ONLINE);
         this.attachStreams();
         break;
-      case 'stop':
+      case 'die':
         this.setStatus(ContainerStatus.OFFLINE);
         break;
     }
@@ -144,13 +157,19 @@ export class ContainerController extends EventEmitter {
     await this._container!.restart();
   }
 
+  public async delete() {
+    this.ensureContainerInitialized();
+
+    await this._container!.remove();
+  }
+
   /**
    * Fetches the logs of the container.
    *
    * @param limit - Optional number of lines to retrieve from the end of the logs.
    * @returns A promise which resolves to the logs as a string.
    */
-  public async getLogs(limit?: number): Promise<string> {
+  public async getLogs(limit?: number): Promise<string | undefined> {
     this.ensureContainerInitialized();
 
     const buffer = await this._container!.logs({
@@ -169,6 +188,9 @@ export class ContainerController extends EventEmitter {
    * @param status - The new status of the container.
    */
   public setStatus(status: ContainerStatus) {
+    console.log(
+      `[${getFormattedTime()}] ${this.name}: status changed to ${status}`
+    );
     this._status = status;
     this.emit(ContainerController.STATUS_EVENT, status);
   }

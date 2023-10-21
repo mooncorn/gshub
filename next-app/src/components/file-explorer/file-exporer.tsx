@@ -1,14 +1,14 @@
 'use client';
 
-import { GetFileContentData } from '@/api/file-explorer/file';
-import { FileData, GetFilesData } from '@/api/file-explorer/files';
+import { GetFileContentData } from '@/api/files/file';
+import { FileData, GetFilesData } from '@/api/files/files';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { FileListItem } from './file-list-item';
 import { FileList } from './file-list';
 import { FileExplorerPath } from './file-explorer-path';
 import { FileEditor } from './file-editor';
-import { updateFile } from '@/api/file-explorer/update';
+import { getFiles } from '@/api/files/files';
 
 function sortFilesAndDirectories(files: FileData[]) {
   return files.sort((a, b) => {
@@ -37,35 +37,18 @@ export const canOpenFileOrDirectory = (file: FileData): boolean =>
   file.isDirectory || canReadFile(file.name);
 
 interface FileExplorerProps {
+  id: string;
   game: string;
-  fetchFiles: ({
-    path,
-    game,
-  }: {
-    path: string;
-    game: string;
-  }) => Promise<GetFilesData>;
-  fetchFileContent: ({
-    path,
-    game,
-  }: {
-    path: string;
-    game: string;
-  }) => Promise<GetFileContentData>;
 }
 
-export function FileExplorer({
-  game,
-  fetchFiles,
-  fetchFileContent,
-}: FileExplorerProps) {
+export function FileExplorer({ id, game }: FileExplorerProps) {
   const [files, setFiles] = useState<FileData[]>([]);
   const [pathItems, setPathItems] = useState<string[]>([]);
   const [showFileEditor, setShowFileEditor] = useState(false);
 
   const filesQuery = useQuery({
     queryKey: ['files', toPath(pathItems)],
-    queryFn: (data) => fetchFiles({ path: data.queryKey[1]!, game }),
+    queryFn: (data) => getFiles({ path: data.queryKey[1]!, game, id }),
     onSuccess: (data) => setFiles(sortFilesAndDirectories(data.files)),
     enabled: !showFileEditor,
   });
@@ -104,10 +87,9 @@ export function FileExplorer({
       <FileExplorerPath items={pathItems} onClickedItem={onPathItemClick} />
       {showFileEditor ? (
         <FileEditor
+          id={id}
           game={game}
           pathItems={pathItems}
-          fetchFileContent={fetchFileContent}
-          updateFileContent={updateFile}
           onClose={onFileEditorClose}
         />
       ) : (

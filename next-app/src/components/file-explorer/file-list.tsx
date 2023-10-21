@@ -16,7 +16,7 @@ export function FileList({
 }: React.HTMLAttributes<HTMLElement>) {
   return (
     <Table {...props} className={cn(className)}>
-      <TableCaption>Minecraft server files.</TableCaption>
+      <TableCaption>Server files.</TableCaption>
       <TableHeader>
         <TableRow>
           <TableHead className="w-[50px]"></TableHead>

@@ -14,6 +14,14 @@ socket.on('minecraft/statusChanged', (status) => {
   console.log(`MINECRAFT SERVER STATUS CHANGED: ${status}\n`);
 });
 
+socket.on('minecraft/playerJoined', () => {
+  console.log(`MINECRAFT PLAYER JOINED`);
+});
+
+socket.on('minecraft/playerLeft', () => {
+  console.log(`MINECRAFT PLAYER LEFT`);
+});
+
 socket.on('valheim/consoleOutput', (data) => {
   console.log(data);
 });

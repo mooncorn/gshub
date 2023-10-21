@@ -7,15 +7,18 @@ export class ValheimServer extends GameServer {
     opts.controller.removeAllListeners('data');
     opts.controller.on('data', (chunk) => {
       const cleanChunk: string = chunk.toString().slice(8, chunk.length);
-      this.io.emit(`${this.gameName}/consoleOutput`, cleanChunk);
+      this.io.emit(`${this.controller.name}/consoleOutput`, cleanChunk);
     });
   }
 
-  public async getLogs(limit: number): Promise<string> {
+  public async getLogs(limit: number): Promise<string | undefined> {
     const logs = await this.controller.getLogs(limit);
-    return logs
-      .split('\n')
-      .map((line) => line.slice(8, line.length))
-      .join('\n');
+    return (
+      logs &&
+      logs
+        .split('\n')
+        .map((line) => line.slice(8, line.length))
+        .join('\n')
+    );
   }
 }
