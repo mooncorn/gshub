@@ -4,24 +4,21 @@ import { ContainerController } from './container-controller';
 export interface GameServerOptions {
   controller: ContainerController;
   io: Server;
-  gameName: string;
 }
 
 export class GameServer {
   public readonly controller: ContainerController;
   protected io: Server;
-  protected readonly gameName: string;
 
   constructor(opts: GameServerOptions) {
     this.controller = opts.controller;
     this.io = opts.io;
-    this.gameName = opts.gameName;
 
     this.controller.on('data', (data) =>
-      this.io.emit(`${this.gameName}/consoleOutput`, data)
+      this.io.emit(`${this.controller.name}/consoleOutput`, data)
     );
     this.controller.on('status', (status) =>
-      this.io.emit(`${this.gameName}/statusChanged`, status)
+      this.io.emit(`${this.controller.name}/statusChanged`, status)
     );
   }
 

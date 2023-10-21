@@ -126,5 +126,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-gameservers
+/server-data/minecraft/
+/server-data/valheim/
 ssl

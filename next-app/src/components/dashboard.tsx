@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Spinner } from '@/components/spinner';
 import { FileExplorer } from '@/components/file-explorer/file-exporer';
-import { getFiles } from '@/api/file-explorer/files';
-import { getFileContent } from '@/api/file-explorer/file';
+import { getFiles } from '@/api/files/files';
+import { getFileContent } from '@/api/files/file';
 import { GetStatusData } from '@/api';
 import { Console } from '@/components/console';
 import { AxiosResponse } from 'axios';
@@ -83,11 +83,7 @@ export function Dashboard({
           />
         </TabsContent>
         <TabsContent value="files">
-          <FileExplorer
-            game={game}
-            fetchFiles={getFiles}
-            fetchFileContent={getFileContent}
-          />
+          <FileExplorer game={'valheim'} id="valheim" />
         </TabsContent>
       </Tabs>
     </>

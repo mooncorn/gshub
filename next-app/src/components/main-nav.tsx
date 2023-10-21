@@ -16,20 +16,28 @@ export function MainNav({ session, className, ...props }: MainNavProps) {
       {...props}
     >
       <Link
-        href={session?.user ? '/home' : '/'}
+        href={'/'}
         className="text-sm font-medium transition-colors hover:text-primary"
       >
-        GameServerHub
+        GSH 2.0
       </Link>
 
-      {/* {session?.user && (
-        <Link
-          href="#"
-          className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-        >
-          Servers
-        </Link>
-      )} */}
+      {session?.user && (
+        <div className="flex gap-x-3">
+          {/* <Link
+            href="/minecraft"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+          >
+            Minecraft
+          </Link>
+          <Link
+            href="/valheim"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+          >
+            Valheim
+          </Link> */}
+        </div>
+      )}
     </nav>
   );
 }

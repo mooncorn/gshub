@@ -1,6 +1,6 @@
 'use client';
 
-import { GetFileContentData } from '@/api/file-explorer/file';
+import { GetFileContentData, getFileContent } from '@/api/files/file';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Textarea } from '../ui/textarea';
@@ -8,33 +8,18 @@ import { toPath } from './file-exporer';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { useToast } from '../ui/use-toast';
+import { updateFile } from '@/api/files/update';
 
 interface FileEditorProps extends React.HTMLAttributes<HTMLDivElement> {
   pathItems: string[];
-  fetchFileContent: ({
-    game,
-    path,
-  }: {
-    path: string;
-    game: string;
-  }) => Promise<GetFileContentData>;
-  updateFileContent: ({
-    path,
-    content,
-    game,
-  }: {
-    path: string;
-    content: string;
-    game: string;
-  }) => Promise<any>;
+  id: string;
   onClose: () => void;
   game: string;
 }
 
 export function FileEditor({
+  id,
   pathItems,
-  fetchFileContent,
-  updateFileContent,
   onClose,
   className,
   game,
@@ -46,7 +31,7 @@ export function FileEditor({
 
   const fileContentQuery = useQuery({
     queryKey: ['file', toPath(pathItems)],
-    queryFn: ({ queryKey }) => fetchFileContent({ path: queryKey[1]!, game }),
+    queryFn: ({ queryKey }) => getFileContent({ path: queryKey[1]!, game, id }),
     onSuccess: (data) => {
       setFileContent(data.content);
       setModifiedFileContent(data.content);
@@ -56,7 +41,7 @@ export function FileEditor({
 
   const updateFileContentMutation = useMutation({
     mutationFn: ({ path, content }: { path: string; content: string }) =>
-      updateFileContent({ path, content, game }),
+      updateFile({ path, content, game, id }),
     onSuccess: () => {
       toast({ title: 'File saved successfully' });
       fileContentQuery.refetch();

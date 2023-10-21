@@ -1,27 +1,31 @@
 import './globals.css';
 import { Header } from '@/components/header';
-import type { Metadata } from 'next';
+import Menu from './_components/menu';
 import { ContextProvider } from '@/components/context-provider';
 import { Footer } from '@/components/footer';
 import { Toaster } from '@/components/ui/toaster';
-
-export const metadata: Metadata = {
-  title: 'GameServerHub',
-  description: 'Hub for game servers',
-};
+import { getServerSession } from 'next-auth';
 
 export default async function RootLayout({
-  children,
+  children, // will be a page or nested layout
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerSession();
+
   return (
-    <html lang="en">
+    <html>
+      <head></head>
       <body>
         <ContextProvider>
           <div className="flex flex-col justify-between min-h-screen">
             <Header />
-            <div className="container py-2 md:py-18 flex-grow">{children}</div>
+
+            <div className="py-2 md:py-18 flex-grow px-2 md:container">
+              <Menu loggedIn={session !== null} />
+
+              {children}
+            </div>
             <Footer />
             <Toaster />
           </div>
