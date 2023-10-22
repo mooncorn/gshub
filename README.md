@@ -1,20 +1,30 @@
-# GameServerHub
+# Game Server Hub
 
-This web application allows to efficiently manage game servers by controlling their startup, shutdown, and executing console commands remotely.
+Game Server Hub is a video game server management tool where users can easily setup and control servers. It currently supports Minecraft and Valheim servers.
 
 ## Features
 
-- **Server Startup and Shutdown:** Initiate the startup and graceful shutdown of game servers from a web interface.
+- **Server management:** Create, modify, and monitor custom servers.
 
-- **Real-time Console Output:** Monitor the console output of running game servers in real-time.
+- **Lifecycle control:** Read real-time server status. Startup and gracefully shutdown servers.
 
-- **Execute Console Commands:** Execute console commands on the Minecraft server remotely through the web app.
+- **Console:** Monitor real-time console logs and execute commands.
+
+- **Files:** Browse server files and edit file content.
+
+- **Whitelist:** Manage access to minecraft servers.
+
+- **Worlds:** Upload new worlds to minecraft servers.
 
 ## Technologies Used
 
 - **next-app:** React with Next.js, Typescript, NextAuth for authentication, Tailwindcss, Socket.io-client for real-time updates.
 
 - **api:** Node.js with Express.js, Typescript, and Socket.io for real-time updates.
+
+## Motivation
+
+Game Server Hub was developed to avoid paying for other video game hosting services, and for learning purposes. This project is currently running in production at zero cost. The API and database is hosted on a spare PC, and the client is on vercel. The website is meant to be used by friends to quickly setup custom servers and manage existing ones.
 
 ## Contributing
 
