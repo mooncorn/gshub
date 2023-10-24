@@ -3,13 +3,6 @@
 import { Power, Trash2 } from 'lucide-react';
 import { ServerStatus } from '../../../components/server-status';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '../../../components/ui/card';
-
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -26,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 import { AxiosError } from 'axios';
+import PlayerCount from './player-count';
 
 interface ServerListItemProps {
   serverItem: ServerListItem;
@@ -82,26 +76,26 @@ export function MinecraftServerListItem({
   });
 
   return (
-    <Card className="flex justify-between shadow">
-      <CardHeader className="py-2 px-2 md:px-6">
-        <CardTitle>
-          <Link href={'/minecraft/' + serverItem.name}>
-            <Button variant="link" className="md:text-2xl p-0 m-0">
-              {serverItem.name}
-            </Button>
-          </Link>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex md:gap-x-2 py-2 px-1 md:px-6">
+    <div className="flex justify-between items-center p-2 border rounded-lg">
+      <Link href={'/minecraft/' + serverItem.name}>
+        <Button variant="link">{serverItem.name}</Button>
+      </Link>
+      <div className="flex space-x-2 items-center">
+        <div>
+          {serverItem.status === 'online' ? (
+            <PlayerCount serverItem={serverItem} />
+          ) : (
+            ''
+          )}
+        </div>
         <ServerStatus
           name={serverItem.name}
           status={serverItem.status === 'online' ? true : false}
           setStatus={setStatus}
         />
-
         <Button
           variant={'ghost'}
-          className="p-3 m-0"
+          className="p-2 m-0"
           disabled={
             stopMutation.isLoading ||
             startMutation.isLoading ||
@@ -116,26 +110,19 @@ export function MinecraftServerListItem({
           }}
         >
           <Power
-            className="m-auto"
             color={serverItem.status === 'offline' ? 'green' : 'red'}
             size={18}
             strokeWidth={3}
           />
         </Button>
-
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant={'ghost'}
-              className="px-3 m-0"
+              className="px-2 m-0"
               disabled={serverItem.status === 'offline' ? false : true}
             >
-              <Trash2
-                className="m-auto"
-                color="red"
-                size={18}
-                strokeWidth={2}
-              />
+              <Trash2 color="red" size={18} strokeWidth={2} />
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -156,7 +143,7 @@ export function MinecraftServerListItem({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -7,8 +7,12 @@ import path from 'path';
 import AdmZip from 'adm-zip';
 
 export class MinecraftServer extends GameServer {
+  public playerCount: number;
+
   constructor(opts: GameServerOptions) {
     super(opts);
+
+    this.playerCount = 0;
 
     opts.controller.removeAllListeners('data');
     opts.controller.on('data', (chunk) => {
@@ -18,9 +22,17 @@ export class MinecraftServer extends GameServer {
 
     this.controller.on('data', (data) => {
       if (data.includes('joined the game')) {
+        this.playerCount++;
         this.io.emit(`${this.controller.name}/playerJoined`);
       } else if (data.includes('left the game')) {
+        this.playerCount--;
         this.io.emit(`${this.controller.name}/playerLeft`);
+      }
+    });
+
+    this.controller.on('data', (data) => {
+      if (data.includes('For help, type "help"')) {
+        this.io.emit(`${this.controller.name}/ready`);
       }
     });
   }
