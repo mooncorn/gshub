@@ -8,10 +8,16 @@ import AdmZip from 'adm-zip';
 
 export class MinecraftServer extends GameServer {
   public playerCount: number;
+  public serverFilesDirectory: string;
 
   constructor(opts: GameServerOptions) {
     super(opts);
 
+    this.serverFilesDirectory = path.join(
+      process.cwd(),
+      '../server-data/minecraft',
+      this.controller.name
+    );
     this.playerCount = 0;
 
     opts.controller.removeAllListeners('data');
@@ -37,7 +43,7 @@ export class MinecraftServer extends GameServer {
     });
   }
 
-  public executeCommand(cmd: string) {
+  public executeCommand(cmd: string): Promise<string> {
     if (this.controller.status === ContainerStatus.OFFLINE)
       throw new BadRequestError(
         'Server has to be online to execute this operation'
@@ -58,13 +64,7 @@ export class MinecraftServer extends GameServer {
   }
 
   public async getWorlds() {
-    const serverPath = path.join(
-      process.cwd(),
-      '../server-data/minecraft',
-      this.controller.name
-    );
-
-    const files = await fs.readdir(serverPath);
+    const files = await fs.readdir(this.serverFilesDirectory);
 
     const isDefaultWorld = (name: string) => name === 'world';
     const isNotSpecialWorld = (name: string) =>
@@ -82,7 +82,9 @@ export class MinecraftServer extends GameServer {
     let buffer: Buffer;
 
     try {
-      buffer = await fs.readFile(path.join(serverPath, 'server.properties'));
+      buffer = await fs.readFile(
+        path.join(this.serverFilesDirectory, 'server.properties')
+      );
     } catch (e) {
       console.log(e);
       throw new BadRequestError(
@@ -118,13 +120,10 @@ export class MinecraftServer extends GameServer {
 
     if (found.active) throw new BadRequestError('World is already active');
 
-    const serverPath = path.join(
-      process.cwd(),
-      '../server-data/minecraft',
-      this.controller.name
+    const propertiesPath = path.join(
+      this.serverFilesDirectory,
+      'server.properties'
     );
-
-    const propertiesPath = path.join(serverPath, 'server.properties');
     let buffer: Buffer;
 
     try {
@@ -174,14 +173,11 @@ export class MinecraftServer extends GameServer {
 
     const worldName = extractedWorldName.trim().toLowerCase().replace(' ', '-');
 
-    const serverPath = path.join(
-      process.cwd(),
-      '../server-data/minecraft',
-      this.controller.name
+    const tempPath = path.join(this.serverFilesDirectory, 'temp');
+    const worldPath = path.join(
+      this.serverFilesDirectory,
+      'world-' + worldName
     );
-
-    const tempPath = path.join(serverPath, 'temp');
-    const worldPath = path.join(serverPath, 'world-' + worldName);
 
     // do the magic
     await fs.mkdir(tempPath, { recursive: true });
@@ -196,15 +192,9 @@ export class MinecraftServer extends GameServer {
   public async delete(includeVolume: boolean) {
     await this.controller.delete();
 
-    if (includeVolume) {
-      const serverPath = path.join(
-        process.cwd(),
-        '../server-data/minecraft',
-        this.controller.name
-      );
+    if (!includeVolume) return;
 
-      await fs.rm(serverPath, { recursive: true, force: true });
-    }
+    await fs.rm(this.serverFilesDirectory, { recursive: true, force: true });
   }
 
   public async getLogs(limit: number): Promise<string | undefined> {
