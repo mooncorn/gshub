@@ -16,6 +16,8 @@ Game Server Hub is a video game server management tool where users can easily se
 
 - **Worlds:** Upload new worlds to minecraft servers.
 
+- **Player count:** Monitor real-time player count on a minecraft server.
+
 ## Technologies Used
 
 - **next-app:** React with Next.js, Typescript, NextAuth for authentication, Tailwindcss, Socket.io-client for real-time updates.
