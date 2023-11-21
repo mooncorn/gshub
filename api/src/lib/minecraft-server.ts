@@ -18,6 +18,10 @@ export class MinecraftServer extends GameServer {
       '../server-data/minecraft',
       this.controller.name
     );
+
+    // There might be an issue where the server is restarted
+    // while a minecraft server is online with players on it.
+    // Player count will be zero while players are connected.
     this.playerCount = 0;
 
     opts.controller.removeAllListeners('data');
@@ -31,7 +35,7 @@ export class MinecraftServer extends GameServer {
         this.playerCount++;
         this.io.emit(`${this.controller.name}/playerJoined`);
       } else if (data.includes('left the game')) {
-        this.playerCount--;
+        this.playerCount = Math.max(0, this.playerCount - 1);
         this.io.emit(`${this.controller.name}/playerLeft`);
       }
     });

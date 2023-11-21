@@ -68,11 +68,10 @@ export class ContainerController extends EventEmitter {
       );
 
     this.id = containerInfo.Id;
-
     this._container = docker.getContainer(containerInfo.Id);
 
-    const steam = await docker.getEvents();
-    steam.on('data', this.handleDockerEvent);
+    const stream = await docker.getEvents();
+    stream.on('data', this.handleDockerEvent);
 
     // check container's status
     const found = await getContainerInfo(this.name, false);
@@ -135,7 +134,6 @@ export class ContainerController extends EventEmitter {
    */
   public async start(): Promise<void> {
     this.ensureContainerInitialized();
-
     await this._container!.start();
   }
 
@@ -144,7 +142,6 @@ export class ContainerController extends EventEmitter {
    */
   public async stop(): Promise<void> {
     this.ensureContainerInitialized();
-
     await this._container!.stop();
   }
 
@@ -153,13 +150,11 @@ export class ContainerController extends EventEmitter {
    */
   public async restart(): Promise<void> {
     this.ensureContainerInitialized();
-
     await this._container!.restart();
   }
 
   public async delete() {
     this.ensureContainerInitialized();
-
     await this._container!.remove();
   }
 

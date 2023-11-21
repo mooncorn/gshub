@@ -11,7 +11,7 @@ router.get(
   requireAuth,
   async (_: Request, res: Response) => {
     res.json({
-      servers: minecraftServerManager.servers.map((s) => {
+      servers: minecraftServerManager.serverList.servers.map((s) => {
         return {
           id: s.controller.id,
           name: s.controller.name,

@@ -6,6 +6,7 @@ import { BadRequestError } from './exceptions/bad-request-error';
 import path from 'path';
 import fs from 'fs/promises';
 import { getContainerInfo } from './utils';
+import { ServerList } from './server-list';
 
 interface MinecraftContainerOptions extends MinecraftServerOptions {
   name: string;
@@ -18,19 +19,14 @@ export interface MinecraftServerOptions {
 
 // sorry to whoever reads this
 export class MinecraftServerManager {
-  public servers: MinecraftServer[] = [];
+  public serverList: ServerList;
 
-  constructor(private io: Server) {}
+  constructor(private io: Server) {
+    this.serverList = new ServerList();
+  }
 
   // fetch server list from db and initialize them
   public async init() {
-    // disconnect event listeners
-    for (let server of this.servers) {
-      server.controller.disconnect();
-    }
-
-    this.servers = [];
-
     const minecraftContainers = await this.list(true);
 
     for (let container of minecraftContainers) {
@@ -42,35 +38,18 @@ export class MinecraftServerManager {
       });
 
       await server.init();
-
-      this.servers.push(server);
+      this.serverList.add(server);
     }
-
-    // log
-    console.log(
-      this.servers.map((s) => {
-        return {
-          name: s.controller.name,
-          id: s.controller.id,
-          status: s.status,
-        };
-      })
-    );
   }
 
   public async delete(id: string, includeVolume: boolean) {
-    const server = this.servers.find((s) => s.controller.id === id);
+    const server = this.serverList.get(id);
 
     if (!server)
       throw new BadRequestError('Server with this id not found: ' + id);
 
     await server.delete(includeVolume);
-
-    server.controller.disconnect();
-
-    this.servers = this.servers.filter(
-      (s) => s.controller.id !== server.controller.id
-    );
+    this.serverList.remove(id);
   }
 
   public async list(all: boolean) {
@@ -83,7 +62,7 @@ export class MinecraftServerManager {
       '/' + opts.name.toLowerCase().trim().replaceAll(' ', '-');
 
     // check if already exists
-    const found = await getContainerInfo('/' + formattedName);
+    const found = await getContainerInfo(formattedName);
 
     if (found)
       throw new BadRequestError(
@@ -124,19 +103,11 @@ export class MinecraftServerManager {
     });
 
     await server.init();
-
-    this.servers.push(server);
-
-    // log
-    console.log('Created: ', {
-      name: server.controller.name,
-      id: server.controller.id,
-      status: server.status,
-    });
+    this.serverList.add(server);
   }
 
   public async update(id: string, opts: MinecraftServerOptions) {
-    const server = this.servers.find((s) => s.controller.id === id);
+    const server = this.serverList.get(id);
 
     if (!server)
       throw new BadRequestError('Server with this id not found: ' + id);
@@ -159,8 +130,6 @@ export class MinecraftServerManager {
       ?.split('=')
       .at(1);
 
-    console.log(versionBefore, typeBefore);
-
     const oldName = oldContainerInfo.Name.replace('/', '');
 
     await oldContainer.rename({ name: oldContainerInfo.Name + '-old' });
@@ -171,15 +140,12 @@ export class MinecraftServerManager {
       version: opts.version || versionBefore,
     });
 
-    // update internal state: disconnect event listeners and remove server from array
-    this.servers.find((s) => s.controller.id === id)?.controller.disconnect();
-    this.servers = this.servers.filter((s) => s.controller.id !== id);
-
+    this.serverList.remove(id);
     await oldContainer.remove();
   }
 
   public async start(id: string) {
-    const server = this.servers.find((s) => s.controller.id === id);
+    const server = this.serverList.get(id);
 
     if (!server)
       throw new BadRequestError('Server with this id not found: ' + id);
@@ -196,7 +162,7 @@ export class MinecraftServerManager {
   }
 
   public async stop(id: string) {
-    const server = this.servers.find((s) => s.controller.id === id);
+    const server = this.serverList.get(id);
 
     if (!server)
       throw new BadRequestError('Server with this id not found: ' + id);
@@ -208,7 +174,7 @@ export class MinecraftServerManager {
   }
 
   public getServer(id: string) {
-    const server = this.servers.find((s) => s.controller.id === id);
+    const server = this.serverList.get(id);
 
     if (!server)
       throw new BadRequestError('Server with this id not found: ' + id);

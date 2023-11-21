@@ -1,31 +1,22 @@
-import path from 'path';
-import fs from 'fs/promises';
 import { ContainerController, ContainerStatus } from '../container-controller';
 import { docker } from '../docker';
 
 describe('container-controller', () => {
   const containerName = 'test-container';
-  const type = 'VANILLA';
-  const version = 'LATEST';
 
   let containerController: ContainerController;
 
-  const serverPath = path.join(
-    process.cwd(),
-    '../server-data/minecraft',
-    containerName
-  );
+  // const serverPath = path.join(
+  //   process.cwd(),
+  //   '../server-data/minecraft',
+  //   containerName
+  // );
 
   beforeAll(async () => {
     // create a container
     await docker.createContainer({
-      Image: 'itzg/minecraft-server',
+      Image: 'ubuntu',
       name: containerName,
-      Env: ['EULA=true', `TYPE=${type}`, `VERSION=${version}`],
-      HostConfig: {
-        Binds: [`${serverPath}:/data`],
-        PortBindings: { '25565/tcp': [{ HostPort: '25565' }] },
-      },
     });
 
     containerController = new ContainerController({
@@ -40,7 +31,8 @@ describe('container-controller', () => {
   afterEach(() => {});
 
   afterAll(async () => {
-    await fs.rm(serverPath, { recursive: true, force: true });
+    // await fs.rm(serverPath, { recursive: true, force: true });
+    containerController.disconnect();
     await containerController.delete();
   });
 
