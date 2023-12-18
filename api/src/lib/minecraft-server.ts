@@ -1,61 +1,57 @@
 import { exec } from 'child_process';
 import { GameServer, GameServerOptions } from './game-server';
-import { ContainerStatus } from './container-controller';
 import { BadRequestError } from './exceptions/bad-request-error';
 import fs from 'fs/promises';
 import path from 'path';
 import AdmZip from 'adm-zip';
+import { DockerContainer } from './docker-container';
 
 export class MinecraftServer extends GameServer {
   public playerCount: number;
-  public serverFilesDirectory: string;
 
   constructor(opts: GameServerOptions) {
     super(opts);
-
-    this.serverFilesDirectory = path.join(
-      process.cwd(),
-      '../server-data/minecraft',
-      this.controller.name
-    );
-
     // There might be an issue where the server is restarted
     // while a minecraft server is online with players on it.
     // Player count will be zero while players are connected.
     this.playerCount = 0;
 
-    opts.controller.removeAllListeners('data');
-    opts.controller.on('data', (chunk) => {
+    opts.container.removeAllListeners(DockerContainer.CONSOLE_OUTPUT_EVENT);
+
+    opts.container.on(DockerContainer.CONSOLE_OUTPUT_EVENT, (chunk) => {
       const cleanChunk: string = chunk.toString().slice(8, chunk.length);
-      this.io.emit(`${this.controller.name}/consoleOutput`, cleanChunk);
+      this.io.emit(
+        `${this.container.name}/${DockerContainer.CONSOLE_OUTPUT_EVENT}`,
+        cleanChunk
+      );
     });
 
-    this.controller.on('data', (data) => {
+    this.container.on(DockerContainer.CONSOLE_OUTPUT_EVENT, (data) => {
       if (data.includes('joined the game')) {
         this.playerCount++;
-        this.io.emit(`${this.controller.name}/playerJoined`);
+        this.io.emit(`${this.container.name}/playerJoined`);
       } else if (data.includes('left the game')) {
         this.playerCount = Math.max(0, this.playerCount - 1);
-        this.io.emit(`${this.controller.name}/playerLeft`);
+        this.io.emit(`${this.container.name}/playerLeft`);
       }
     });
 
-    this.controller.on('data', (data) => {
+    this.container.on(DockerContainer.CONSOLE_OUTPUT_EVENT, (data) => {
       if (data.includes('For help, type "help"')) {
-        this.io.emit(`${this.controller.name}/ready`);
+        this.io.emit(`${this.container.name}/ready`);
       }
     });
   }
 
   public executeCommand(cmd: string): Promise<string> {
-    if (this.controller.status === ContainerStatus.OFFLINE)
+    if (!this.container.running)
       throw new BadRequestError(
         'Server has to be online to execute this operation'
       );
 
     return new Promise((resolve, reject) => {
       exec(
-        `docker exec ${this.controller.name} rcon-cli ${cmd}`,
+        `docker exec ${this.container.name} rcon-cli ${cmd}`,
         (err, stdout) => {
           console.log(stdout);
           if (err) {
@@ -68,7 +64,7 @@ export class MinecraftServer extends GameServer {
   }
 
   public async getWorlds() {
-    const files = await fs.readdir(this.serverFilesDirectory);
+    const files = await fs.readdir(this.sourceDirectory);
 
     const isDefaultWorld = (name: string) => name === 'world';
     const isNotSpecialWorld = (name: string) =>
@@ -87,7 +83,7 @@ export class MinecraftServer extends GameServer {
 
     try {
       buffer = await fs.readFile(
-        path.join(this.serverFilesDirectory, 'server.properties')
+        path.join(this.sourceDirectory, 'server.properties')
       );
     } catch (e) {
       console.log(e);
@@ -124,10 +120,7 @@ export class MinecraftServer extends GameServer {
 
     if (found.active) throw new BadRequestError('World is already active');
 
-    const propertiesPath = path.join(
-      this.serverFilesDirectory,
-      'server.properties'
-    );
+    const propertiesPath = path.join(this.sourceDirectory, 'server.properties');
     let buffer: Buffer;
 
     try {
@@ -159,7 +152,7 @@ export class MinecraftServer extends GameServer {
   public async uploadWorld(world: Buffer | undefined) {
     if (!world) throw new BadRequestError('World buffer is undefined');
 
-    if (this.status === ContainerStatus.ONLINE)
+    if (!this.container.running)
       throw new BadRequestError('Server has to be stopped to upload a world');
 
     // unzip
@@ -177,11 +170,8 @@ export class MinecraftServer extends GameServer {
 
     const worldName = extractedWorldName.trim().toLowerCase().replace(' ', '-');
 
-    const tempPath = path.join(this.serverFilesDirectory, 'temp');
-    const worldPath = path.join(
-      this.serverFilesDirectory,
-      'world-' + worldName
-    );
+    const tempPath = path.join(this.sourceDirectory, 'temp');
+    const worldPath = path.join(this.sourceDirectory, 'world-' + worldName);
 
     // do the magic
     await fs.mkdir(tempPath, { recursive: true });
@@ -193,16 +183,8 @@ export class MinecraftServer extends GameServer {
     await fs.rm(tempPath, { recursive: true, force: true });
   }
 
-  public async delete(includeVolume: boolean) {
-    await this.controller.delete();
-
-    if (!includeVolume) return;
-
-    await fs.rm(this.serverFilesDirectory, { recursive: true, force: true });
-  }
-
   public async getLogs(limit: number): Promise<string | undefined> {
-    const logs = await this.controller.getLogs(limit);
+    const logs = await this.container.getLogs(limit);
     return logs
       ?.split('\n')
       .map((item) => item.slice(8, item.length))

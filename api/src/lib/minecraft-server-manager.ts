@@ -6,58 +6,66 @@ import { BadRequestError } from './exceptions/bad-request-error';
 import path from 'path';
 import fs from 'fs/promises';
 import { getContainerInfo } from './utils';
-import { ServerList } from './server-list';
+import { NameIdCollection } from './name-id-collection';
+import { DockerContainerManager } from './docker-container-manager';
+import { DockerContainer } from './docker-container';
 
-interface MinecraftContainerOptions extends MinecraftServerOptions {
-  name: string;
-}
-
-export interface MinecraftServerOptions {
+interface UpdateMinecraftServerOpts {
   version?: string;
   type?: string;
 }
 
-// sorry to whoever reads this
+interface CreateMinecraftServerOpts extends UpdateMinecraftServerOpts {
+  name: string;
+}
+
 export class MinecraftServerManager {
-  public serverList: ServerList;
+  public static readonly CONTAINER_IMAGE = 'itzg/minecraft-server';
+
+  public serverList: NameIdCollection<MinecraftServer>;
+  private containerManager: DockerContainerManager;
 
   constructor(private io: Server) {
-    this.serverList = new ServerList();
+    this.serverList = new NameIdCollection<MinecraftServer>();
+    this.containerManager = new DockerContainerManager();
   }
 
-  // fetch server list from db and initialize them
   public async init() {
-    const minecraftContainers = await this.list(true);
+    const allContainers = await this.containerManager.list({ all: true });
 
-    for (let container of minecraftContainers) {
-      const server = new MinecraftServer({
-        controller: new ContainerController({
-          containerName: container.Names[0],
-        }),
-        io: this.io,
-      });
+    for (const container of allContainers) {
+      if (container.image !== MinecraftServerManager.CONTAINER_IMAGE) return;
 
-      await server.init();
+      const server = new MinecraftServer({ container, io: this.io });
+      await server.container.init();
       this.serverList.add(server);
     }
   }
 
-  public async delete(id: string, includeVolume: boolean) {
-    const server = this.serverList.get(id);
+  public async delete(
+    id: string,
+    includeVolume: boolean
+  ): Promise<MinecraftServer> {
+    const server = this.serverList.getById(id);
 
     if (!server)
       throw new BadRequestError('Server with this id not found: ' + id);
 
-    await server.delete(includeVolume);
+    await this.containerManager.delete({ id });
+
+    if (includeVolume) {
+      await fs.rm(server.sourceDirectory, { recursive: true, force: true });
+    }
+
     this.serverList.remove(id);
+    return server;
   }
 
-  public async list(all: boolean) {
-    const allContainers = await docker.listContainers({ all });
-    return allContainers.filter((c) => c.Image === 'itzg/minecraft-server');
+  public list(): MinecraftServer[] {
+    return this.serverList.values();
   }
 
-  public async create(opts: MinecraftContainerOptions) {
+  public async create(opts: CreateMinecraftServerOpts) {
     const formattedName =
       '/' + opts.name.toLowerCase().trim().replaceAll(' ', '-');
 
@@ -81,38 +89,40 @@ export class MinecraftServerManager {
     const version = opts.version || 'LATEST';
 
     try {
-      await docker.createContainer({
-        Image: 'itzg/minecraft-server',
+      const newContainer = await this.containerManager.create({
+        image: MinecraftServerManager.CONTAINER_IMAGE,
         name: formattedName,
-        Env: ['EULA=true', `TYPE=${type}`, `VERSION=${version}`],
-        HostConfig: {
-          Binds: [`${serverPath}:/data`],
-          PortBindings: { '25565/tcp': [{ HostPort: '25565' }] },
+        env: {
+          EULA: 'true',
+          TYPE: type,
+          VERSION: version,
         },
+        volumeBinds: [`${serverPath}:/data`],
+        portBinds: { '25565/tcp': [{ HostPort: '25565' }] },
       });
+
+      const server = new MinecraftServer({
+        container: newContainer,
+        io: this.io,
+      });
+
+      await server.container.init();
+      this.serverList.add(server);
     } catch (err) {
       if (err instanceof Error)
         throw new BadRequestError(
           "Failed to create a new server. Make sure the server doesn't already exist."
         );
     }
-
-    const server = new MinecraftServer({
-      controller: new ContainerController({ containerName: formattedName }),
-      io: this.io,
-    });
-
-    await server.init();
-    this.serverList.add(server);
   }
 
-  public async update(id: string, opts: MinecraftServerOptions) {
-    const server = this.serverList.get(id);
+  public async update(id: string, opts: UpdateMinecraftServerOpts) {
+    const server = this.serverList.getById(id);
 
     if (!server)
       throw new BadRequestError('Server with this id not found: ' + id);
 
-    if (server.status === ContainerStatus.ONLINE)
+    if (server.container.running)
       throw new BadRequestError('Server has to be stopped to update it');
 
     const oldContainer = docker.getContainer(id);
