@@ -1,24 +1,16 @@
-import { Request, Response, NextFunction } from 'express';
-import { UnauthorizedRequestError } from '../lib/exceptions/unauthorized-request-error';
-import { getFormattedTime } from '../lib/utils';
+import { Request, Response, NextFunction } from "express";
+import { UnauthorizedRequestError } from "../lib/exceptions/unauthorized-request-error";
 
 // requireAuth assumes the request has already
 // been processed by currentUser middleware
-export const requireAuth = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const requireAuth = (req: Request, _: Response, next: NextFunction) => {
+  if (process.env.TS_NODE_DEV === "true") {
+    next();
+    return;
+  }
+
   if (!req.user) {
     throw new UnauthorizedRequestError();
   }
-
-  const user = req.user!;
-
-  console.log(
-    `[${getFormattedTime()}] Authenticated: ${user.id} ${user.role} ${
-      user.email
-    }`
-  );
   next();
 };

@@ -1,10 +1,10 @@
-import path from 'path';
-import fs from 'fs/promises';
-import { BadRequestError } from './exceptions/bad-request-error';
+import path from "path";
+import fs from "fs/promises";
+import { BadRequestError } from "./exceptions/api/bad-request-error";
 
 // Regular expression to match file extensions that can be read
 export const READABLE_FILES_REGEX = new RegExp(
-  '.+\\.(json|txt|properties|yml)'
+  ".+\\.(json|txt|properties|yml)"
 );
 
 export class FileExplorer {
@@ -15,10 +15,10 @@ export class FileExplorer {
   }
 
   // Method to list files and folders in a directory
-  async listFilesAndFolders(directoryPath: string = '') {
+  async listFilesAndFolders(directoryPath: string = "") {
     try {
-      if (directoryPath.includes('..'))
-        throw new BadRequestError('Cannot access parent directory');
+      if (directoryPath.includes(".."))
+        throw new BadRequestError("Cannot access parent directory");
 
       const fullPath = path.join(this._rootDir, directoryPath);
 
@@ -44,54 +44,54 @@ export class FileExplorer {
 
       return result;
     } catch (err) {
-      console.error('Error listing files and folders:', err);
-      throw new BadRequestError('Error listing files and folders');
+      console.error("Error listing files and folders:", err);
+      throw new BadRequestError("Error listing files and folders");
     }
   }
 
   // Method to read the content of a file
   async readFile(filePath: string): Promise<string> {
     try {
-      if (filePath.includes('..'))
-        throw new BadRequestError('Cannot access parent directory');
+      if (filePath.includes(".."))
+        throw new BadRequestError("Cannot access parent directory");
 
       const fullPath = path.join(this._rootDir, filePath);
 
       const isReadable = READABLE_FILES_REGEX.test(filePath);
 
-      if (!isReadable) throw new BadRequestError('Cannot read file');
+      if (!isReadable) throw new BadRequestError("Cannot read file");
 
-      return await fs.readFile(fullPath, 'utf-8');
+      return await fs.readFile(fullPath, "utf-8");
     } catch (err) {
-      console.log('Error reading file:', err);
-      throw new BadRequestError('Error reading file');
+      console.log("Error reading file:", err);
+      throw new BadRequestError("Error reading file");
     }
   }
 
   // Method to update the content of a file
   async updateFile(filePath: string, newContent: string) {
     try {
-      if (filePath.includes('..'))
-        throw new BadRequestError('Cannot access parent directory');
+      if (filePath.includes(".."))
+        throw new BadRequestError("Cannot access parent directory");
 
       const fullPath = path.join(this._rootDir, filePath);
       const isReadable = READABLE_FILES_REGEX.test(filePath);
 
-      if (!isReadable) throw new BadRequestError('Cannot read file');
+      if (!isReadable) throw new BadRequestError("Cannot read file");
 
       const stat = await fs.lstat(fullPath);
 
       // Check if full path belongs to a file
       if (stat.isDirectory())
-        throw new BadRequestError('Cannot update a directory');
+        throw new BadRequestError("Cannot update a directory");
 
       // Write the new content to the specified file
-      await fs.writeFile(fullPath, newContent, 'utf-8');
+      await fs.writeFile(fullPath, newContent, "utf-8");
 
       return newContent;
     } catch (err) {
-      console.error('Error updating file:', err);
-      throw new BadRequestError('Error updating file');
+      console.error("Error updating file:", err);
+      throw new BadRequestError("Error updating file");
     }
   }
 

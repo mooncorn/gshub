@@ -1,5 +1,5 @@
 import { ICollection } from "./collection";
-import { BadRequestError } from "../exceptions/bad-request-error";
+import { BadRequestError } from "../exceptions/api/bad-request-error";
 import { ServerNotFoundError } from "../exceptions/server-not-found-error";
 import { IServer } from "./minecraft-server";
 

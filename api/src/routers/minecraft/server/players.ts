@@ -1,14 +1,14 @@
-import express, { Request, Response } from 'express';
-import { currentUser } from '../../../middleware/current-user';
-import { minecraftServerManager } from '../../../app';
-import { ContainerStatus } from '../../../lib/container-controller';
-import { BadRequestError } from '../../../lib/exceptions/bad-request-error';
-import { requireAuth } from '../../../middleware/require-auth';
+import express, { Request, Response } from "express";
+import { currentUser } from "../../../middleware/current-user";
+import { minecraftServerManager } from "../../../app";
+import { ContainerStatus } from "../../../lib/container-controller";
+import { BadRequestError } from "../../../lib/exceptions/api/bad-request-error";
+import { requireAuth } from "../../../middleware/require-auth";
 
 const router = express.Router();
 
 router.get(
-  '/api/minecraft/servers/:id/players',
+  "/api/minecraft/servers/:id/players",
   currentUser,
   requireAuth,
   async (req: Request, res: Response) => {
@@ -18,7 +18,7 @@ router.get(
 
     if (server.controller.status === ContainerStatus.OFFLINE)
       throw new BadRequestError(
-        'Server has to be online to check player count'
+        "Server has to be online to check player count"
       );
 
     res.json({ status: { players: server.playerCount } });

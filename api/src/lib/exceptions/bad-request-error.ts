@@ -1,5 +1,5 @@
-import { CustomError } from './custom-error';
-import { SerializedError } from './interfaces/serialized-error';
+import { CustomError } from "./custom-error";
+import { SerializedError } from "./interfaces/serialized-error";
 
 export class BadRequestError extends CustomError {
   statusCode = 400;
@@ -9,6 +9,6 @@ export class BadRequestError extends CustomError {
   }
 
   serializeErrors(): SerializedError[] {
-    return [{ message: this.message || 'Bad request' }];
+    return [{ message: this.message || "Bad request" }];
   }
 }

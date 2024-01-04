@@ -1,10 +1,10 @@
-import { DockerContainer } from './docker-container';
-import { DockerContainerCollection } from './name-id-collection';
+import { DockerContainer } from "./v2/docker-container";
+import { DockerContainerCollection } from "./v2/collection";
 import {
   CreateDockerContainerOpts,
   DockerContainerManager,
   UpdateDockerContainerOpts,
-} from './docker-container-manager';
+} from "./v2/docker-container-manager";
 
 /**
  * A controller class to manage containers and their respective instances simultaneously.

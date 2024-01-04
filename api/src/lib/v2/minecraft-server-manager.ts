@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import { ContainerController, ContainerStatus } from "../container-controller";
 import { docker } from "../docker";
-import { BadRequestError } from "../exceptions/bad-request-error";
+import { BadRequestError } from "../exceptions/api/bad-request-error";
 import path from "path";
 import fs from "fs/promises";
 import { getContainerInfo } from "../utils";

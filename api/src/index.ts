@@ -1,13 +1,9 @@
-import { app, valheimServer, minecraftServerManager } from './app';
+import { server } from "./app";
 
 const port = process.env.PORT || 3001;
 
 const start = async () => {
-  await valheimServer.init();
-
-  await minecraftServerManager.init();
-
-  app.listen(port, () => {
+  server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });
 };

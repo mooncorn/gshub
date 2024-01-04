@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs/promises";
 import Docker from "dockerode";
 import { FileExplorer, IFileExplorer } from "../files/file-explorer";
 import { KeyValueMapper } from "../key-value-mapper";
@@ -6,12 +7,12 @@ import {
   ContainerEnv,
   ContainerInfo,
   ContainerPortBinds,
-  ContainerVolumeBinds,
   DockerContainer,
   IContainer,
 } from "./docker-container";
 import { IEventEmitter } from "../event-emitter";
 import EventEmitter from "events";
+import { BadRequestError } from "../../exceptions/bad-request-error";
 
 export type Callback<T> = (data: T) => void;
 
@@ -20,7 +21,7 @@ export type CreateContainerOpts = {
   name: string;
   image: string;
   env?: ContainerEnv;
-  volumeBinds?: ContainerVolumeBinds;
+  volumeBinds?: string[];
   portBinds?: ContainerPortBinds;
 };
 export type UpdateContainerOpts = {
@@ -29,10 +30,11 @@ export type UpdateContainerOpts = {
 };
 
 export interface IDocker {
-  getContainer(id: string): IContainer | undefined;
+  readonly containersDirectory: string;
+  getContainer(id: string): IContainer;
   list(filter?: ListContainersOpts): IContainer[];
   create(opts: CreateContainerOpts): Promise<IContainer>;
-  delete(id: string, deleteVolume: boolean): Promise<void>;
+  delete(id: string, deleteVolume: boolean): Promise<IContainer>;
   update(opts: UpdateContainerOpts): Promise<IContainer>;
 }
 
@@ -42,12 +44,20 @@ export class DockerService implements IDocker {
   private containers: Map<string, IContainer>;
   private docker: Docker;
 
-  constructor(private eventEmitter: IEventEmitter = new EventEmitter()) {
+  constructor(
+    public readonly containersDirectory: string,
+    private eventEmitter: IEventEmitter = new EventEmitter()
+  ) {
     this.docker = new Docker();
     this.containers = new Map();
     this.keyValueMapper = new KeyValueMapper("=");
   }
 
+  /**
+   * Initializes the Docker service by fetching the Docker event stream,
+   * and initializing each container.
+   * @returns A Promise that resolves when the initialization is complete.
+   */
   public async init(): Promise<void> {
     this.dockerEventStream = await this.docker.getEvents();
 
@@ -64,7 +74,9 @@ export class DockerService implements IDocker {
       );
 
       if (volumeBinds) {
-        files = new FileExplorer(volumeBinds.root);
+        files = new FileExplorer(
+          path.join(this.containersDirectory, info.Name)
+        );
       }
 
       const dockerContainer = new DockerContainer(
@@ -87,34 +99,48 @@ export class DockerService implements IDocker {
     }
   }
 
-  public getContainer(id: string): IContainer | undefined {
-    return this.containers.get(id);
+  /**
+   * Retrieves a container by its ID.
+   * @param id The ID of the container to retrieve.
+   * @returns The container with the specified ID.
+   * @throws `BadRequestError` if the container does not exist.
+   */
+  public getContainer(id: string): IContainer {
+    const container = this.containers.get(id);
+    if (!container) {
+      throw new BadRequestError(`Container with ID ${id} does not exist.`);
+    }
+
+    return container;
   }
 
-  public list(filter: ListContainersOpts | undefined): IContainer[] {
+  /**
+   * Retrieves a list of containers.
+   * @param filter A function that filters the list of containers.
+   * @returns A list of containers.
+   */
+  public list(filter?: ListContainersOpts): IContainer[] {
     const containers = [...this.containers.values()];
 
     if (filter) {
-      return containers.filter((container) => filter!(container.info));
+      return containers.filter((container) => filter!(container));
     }
 
     return containers;
   }
 
+  /**
+   * Creates a new Docker container with the specified options.
+   *
+   * @param opts - The options for creating the container.
+   * @returns A promise that resolves to the created container.
+   * @throws `BadRequestError` if the name is invalid or already in use.
+   */
   public async create(opts: CreateContainerOpts): Promise<IContainer> {
-    // validate and sanitize name
-    const isNameValid = opts.name.match(/^[a-zA-Z0-9 -]+$/);
-    if (!isNameValid)
-      throw new Error(
-        "Invalid server name. Only alphanumeric characters, spaces, and dashes are allowed."
-      );
-    const name = opts.name.toLowerCase().trim().replace(" ", "-");
+    const name = this.parseName(opts.name);
 
-    const found =
-      this.list((container) => container.name === opts.name).length > 0;
-
-    if (found) {
-      throw new Error(`Container with name ${opts.name} already exists.`);
+    if (this.containerNameExists(name)) {
+      throw new BadRequestError(`Name '${name}' is already in use.`);
     }
 
     const container = await this.docker.createContainer({
@@ -123,7 +149,7 @@ export class DockerService implements IDocker {
       Tty: true,
       Env: this.keyValueMapper.mapObjectToArray(opts.env || {}),
       HostConfig: {
-        Binds: this.parseVolumeBindsToHostPaths(opts.volumeBinds),
+        Binds: this.parseVolumeBindsToHostPaths(name, opts.volumeBinds),
         PortBindings: opts.portBinds,
       },
     });
@@ -132,9 +158,8 @@ export class DockerService implements IDocker {
 
     let files: IFileExplorer | undefined;
 
-    if (info.HostConfig.Binds && info.HostConfig.Binds.length > 0) {
-      const rootDir = path.join(info.HostConfig.Binds[0].split(":")[0], "..");
-      files = new FileExplorer(rootDir);
+    if (opts.volumeBinds && opts.volumeBinds.length > 0) {
+      files = new FileExplorer(path.join(this.containersDirectory, name));
     }
 
     const dockerContainer = new DockerContainer(
@@ -157,62 +182,113 @@ export class DockerService implements IDocker {
     return dockerContainer;
   }
 
-  public async delete(id: string, deleteVolume: boolean): Promise<void> {
+  /**
+   * Deletes a Docker container with the specified ID.
+   * @param id The ID of the container to delete.
+   * @param deleteVolume Whether to delete the container's local volume.
+   * @returns A promise that resolves to the deleted container.
+   */
+  public async delete(id: string, deleteVolume: boolean): Promise<IContainer> {
     const container = this.getContainer(id);
-
-    if (!container) {
-      throw new Error(`Container with ID ${id} does not exist.`);
-    }
 
     // Remove container from docker
     await this.docker.getContainer(id).remove({ force: true });
 
     // Remove local volume
     if (deleteVolume) {
-      this.containers.get(id)?.files?.delete();
+      container.files?.delete();
     }
 
     // Remove container from memory
     this.containers.delete(id);
+
+    return container;
   }
 
+  /**
+   * Updates a Docker container with the specified options.
+   * @param opts The options for updating the container.
+   * @returns A promise that resolves to the updated container.
+   */
   public async update(opts: UpdateContainerOpts): Promise<IContainer> {
-    const prevContainer = this.getContainer(opts.id);
+    if (opts.update.name) {
+      const name = this.parseName(opts.update.name);
 
-    if (!prevContainer) {
-      throw new Error(`Container with ID ${opts.id} does not exist.`);
+      if (this.containerNameExists(name)) {
+        throw new BadRequestError(`Name '${name}' is already in use.`);
+      }
     }
 
-    await this.delete(opts.id, false);
+    const prevContainer = await this.delete(opts.id, false);
 
-    return await this.create({
-      name: opts.update.name || prevContainer.info.name,
-      image: opts.update.image || prevContainer.info.image,
-      env: opts.update.env || prevContainer.info.env,
-      portBinds: opts.update.portBinds || prevContainer.info.portBinds,
-      volumeBinds: opts.update.volumeBinds || prevContainer.info.volumeBinds,
+    const container = await this.create({
+      name: opts.update.name || prevContainer.name,
+      image: opts.update.image || prevContainer.image,
+      env: opts.update.env || prevContainer.env,
+      portBinds: opts.update.portBinds || prevContainer.portBinds,
+      volumeBinds: opts.update.volumeBinds || prevContainer.volumeBinds,
     });
+
+    // Move files to new directory if name changed
+    if (
+      opts.update.name &&
+      container.name !== prevContainer.name &&
+      container.files
+    ) {
+      this.moveDirectory(
+        path.join(this.containersDirectory, prevContainer.name),
+        path.join(this.containersDirectory, container.name)
+      );
+
+      container.files = new FileExplorer(
+        path.join(this.containersDirectory, container.name)
+      );
+    }
+
+    return container;
   }
 
   private parseVolumeBindsToHostPaths(
-    volumeBinds: ContainerVolumeBinds | undefined
-  ): string[] {
-    if (!volumeBinds) return [];
+    containerName: string,
+    volumeBinds: string[] | undefined
+  ): string[] | undefined {
+    if (!volumeBinds || volumeBinds.length === 0) return;
 
-    return volumeBinds.binds.map(
-      (bind) => `${volumeBinds.root}${bind}:${bind}`
+    return volumeBinds.map(
+      (bind) =>
+        `${path.join(this.containersDirectory, containerName, bind)}:${bind}`
     );
   }
 
   private parseHostPathsToVolumeBinds(
     hostPaths: string[] | undefined
-  ): ContainerVolumeBinds | undefined {
+  ): string[] | undefined {
     if (!hostPaths || hostPaths.length === 0) return;
 
-    const binds = hostPaths.map((hostPath) => hostPath.split(":")[1]);
-    const bind = binds.at(0)!;
-    const root = hostPaths[0].split(":")[0].replace(bind, "");
+    return hostPaths.map((hostPath) => hostPath.split(":")[1]);
+  }
 
-    return { root, binds };
+  private parseName(name: string): string {
+    const isNameValid = name.match(/^[a-zA-Z0-9][a-zA-Z0-9_.-]+$/);
+    if (!isNameValid)
+      throw new BadRequestError(
+        "Invalid server name. Only alphanumeric characters, spaces, and dashes are allowed."
+      );
+
+    return name.toLowerCase().trim().replace(" ", "-");
+  }
+
+  private containerNameExists(name: string): boolean {
+    return this.list((container) => container.name === name).length > 0;
+  }
+
+  private async moveDirectory(src: string, dest: string): Promise<void> {
+    try {
+      await fs.access(src);
+    } catch (e) {
+      return;
+    }
+
+    await fs.rename(src, dest);
   }
 }

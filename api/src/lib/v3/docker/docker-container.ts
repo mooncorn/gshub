@@ -5,10 +5,6 @@ import EventEmitter from "events";
 
 export type ContainerEnv = Record<string, string>;
 export type ContainerPortBinds = Record<string, { HostPort: string }[]>;
-export type ContainerVolumeBinds = {
-  root: string;
-  binds: string[];
-};
 export type ContainerEventData<T> = {
   container: {
     id: string;
@@ -16,18 +12,18 @@ export type ContainerEventData<T> = {
   };
   data: T;
 };
-export type ContainerInfo = {
-  readonly id: string;
-  readonly name: string;
-  readonly image: string;
-  readonly env: ContainerEnv;
-  readonly volumeBinds?: ContainerVolumeBinds;
-  readonly portBinds?: ContainerPortBinds;
-};
 
-export interface IContainer {
+export interface ContainerInfo {
+  id: string;
+  name: string;
+  image: string;
+  env: ContainerEnv;
+  volumeBinds?: string[];
+  portBinds?: ContainerPortBinds;
+}
+
+export interface IContainer extends ContainerInfo {
   files: IFileExplorer | undefined;
-  info: ContainerInfo;
   init(): Promise<void>;
   start(): Promise<void>;
   stop(): Promise<void>;
@@ -51,13 +47,27 @@ export class DockerContainer implements IContainer {
   private readonly STATUS_CHANGED_EVENT = "statusChanged";
   private readonly LOGS_EVENT = "logs";
 
+  public readonly id: string;
+  private _name: string;
+  public readonly image: string;
+  public readonly env: ContainerEnv;
+  public readonly volumeBinds?: string[];
+  public readonly portBinds?: ContainerPortBinds;
+
   constructor(
-    public readonly info: ContainerInfo,
+    info: ContainerInfo,
     private container: Container,
     public files: IFileExplorer | undefined,
     private readonly dockerEventStream: NodeJS.ReadableStream,
     private readonly eventEmitter: IEventEmitter = new EventEmitter()
-  ) {}
+  ) {
+    this.id = info.id;
+    this._name = info.name;
+    this.image = info.image;
+    this.env = info.env;
+    this.volumeBinds = info.volumeBinds;
+    this.portBinds = info.portBinds;
+  }
 
   public async init() {
     await this.attachEventListeners();
@@ -73,12 +83,7 @@ export class DockerContainer implements IContainer {
       const { Actor, status } = JSON.parse(data.toString());
       const eventContainerName = Actor.Attributes.name;
 
-      if ("/" + eventContainerName !== this.info.name) return;
-
-      const container = {
-        id: this.info.id,
-        name: this.info.name,
-      };
+      if (eventContainerName !== this.name) return;
 
       switch (status) {
         case "start":
@@ -140,8 +145,8 @@ export class DockerContainer implements IContainer {
       this.STATUS_CHANGED_EVENT,
       {
         container: {
-          id: this.info.id,
-          name: this.info.name,
+          id: this.id,
+          name: this.name,
         },
         data: {
           running,
@@ -155,13 +160,21 @@ export class DockerContainer implements IContainer {
       this.LOGS_EVENT,
       {
         container: {
-          id: this.info.id,
-          name: this.info.name,
+          id: this.id,
+          name: this.name,
         },
         data: {
           logs,
         },
       }
     );
+  }
+
+  public get name() {
+    return this._name.replace("/", "");
+  }
+
+  public set name(newName: string) {
+    this._name = "/" + newName;
   }
 }

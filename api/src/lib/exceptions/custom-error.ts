@@ -1,4 +1,4 @@
-import { SerializedError } from './interfaces/serialized-error';
+import { SerializedError } from "./interfaces/serialized-error";
 
 export abstract class CustomError extends Error {
   abstract statusCode: number;

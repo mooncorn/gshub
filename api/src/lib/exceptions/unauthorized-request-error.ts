@@ -1,5 +1,5 @@
-import { SerializedError } from './interfaces/serialized-error';
-import { CustomError } from './custom-error';
+import { SerializedError } from "./interfaces/serialized-error";
+import { CustomError } from "./custom-error";
 
 export class UnauthorizedRequestError extends CustomError {
   statusCode = 401;
@@ -9,6 +9,6 @@ export class UnauthorizedRequestError extends CustomError {
   }
 
   serializeErrors(): SerializedError[] {
-    return [{ message: 'Not authorized' }];
+    return [{ message: "Not authorized" }];
   }
 }

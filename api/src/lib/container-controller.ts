@@ -1,15 +1,15 @@
-import { InternalError } from './exceptions/internal-error';
-import { Container } from 'dockerode';
-import { docker } from './docker';
-import { getContainerInfo, getFormattedTime } from './utils';
-import { EventEmitter } from 'stream';
+import { Container } from "dockerode";
+import { docker } from "./docker";
+import { getContainerInfo, getFormattedTime } from "./utils";
+import { EventEmitter } from "stream";
+import { BadRequestError } from "./exceptions/bad-request-error";
 
 /**
  * Enumeration representing the possible status values of a container.
  */
 export enum ContainerStatus {
-  OFFLINE = 'offline',
-  ONLINE = 'online',
+  OFFLINE = "offline",
+  ONLINE = "online",
 }
 
 /**
@@ -23,8 +23,8 @@ export interface ContainerControllerOptions {
 }
 
 export declare interface ContainerController {
-  on(event: 'data', listener: (data: string) => void): this;
-  on(event: 'status', listener: (status: ContainerStatus) => void): this;
+  on(event: "data", listener: (data: string) => void): this;
+  on(event: "status", listener: (status: ContainerStatus) => void): this;
 }
 
 /**
@@ -32,8 +32,8 @@ export declare interface ContainerController {
  * It extends EventEmitter to emit specific events when the container's state changes or data is received.
  */
 export class ContainerController extends EventEmitter {
-  public static readonly DATA_EVENT = 'data';
-  public static readonly STATUS_EVENT = 'status';
+  public static readonly DATA_EVENT = "data";
+  public static readonly STATUS_EVENT = "status";
 
   private _container: Container | undefined;
   private _status: ContainerStatus;
@@ -43,7 +43,7 @@ export class ContainerController extends EventEmitter {
    */
   public readonly name: string;
 
-  public id: string = '';
+  public id: string = "";
 
   /**
    * Creates a new ContainerController instance.
@@ -63,7 +63,7 @@ export class ContainerController extends EventEmitter {
     const containerInfo = await getContainerInfo(this.name);
 
     if (!containerInfo)
-      throw new InternalError(
+      throw new BadRequestError(
         `Could not find container with this name: ${this.name}`
       );
 
@@ -71,7 +71,7 @@ export class ContainerController extends EventEmitter {
     this._container = docker.getContainer(containerInfo.Id);
 
     const stream = await docker.getEvents();
-    stream.on('data', this.handleDockerEvent);
+    stream.on("data", this.handleDockerEvent);
 
     // check container's status
     const found = await getContainerInfo(this.name, false);
@@ -95,14 +95,14 @@ export class ContainerController extends EventEmitter {
   private handleDockerEvent = (data: any): void => {
     const event = JSON.parse(data.toString());
 
-    if ('/' + event.Actor.Attributes.name !== this.name) return;
+    if ("/" + event.Actor.Attributes.name !== this.name) return;
 
     switch (event.status) {
-      case 'start':
+      case "start":
         this.setStatus(ContainerStatus.ONLINE);
         this.attachStreams();
         break;
-      case 'die':
+      case "die":
         this.setStatus(ContainerStatus.OFFLINE);
         break;
     }
@@ -122,7 +122,7 @@ export class ContainerController extends EventEmitter {
         stderr: true,
       },
       (_, stream) => {
-        stream?.on('data', (chunk) => {
+        stream?.on("data", (chunk) => {
           this.emit(ContainerController.DATA_EVENT, chunk.toString());
         });
       }
@@ -174,7 +174,7 @@ export class ContainerController extends EventEmitter {
       tail: limit,
     });
 
-    return buffer.toString('utf-8');
+    return buffer.toString("utf-8");
   }
 
   /**
@@ -204,8 +204,8 @@ export class ContainerController extends EventEmitter {
    */
   private ensureContainerInitialized() {
     if (!this._container) {
-      throw new InternalError(
-        'Container controller not initialized. Try running init method.'
+      throw new BadRequestError(
+        "Container controller not initialized. Try running init method."
       );
     }
   }
