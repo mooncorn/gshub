@@ -3,7 +3,15 @@ import fs from "fs/promises";
 import { BadRequestError } from "../../exceptions/bad-request-error";
 
 export interface IFileExplorer {
-  listFilesAndFolders(directoryPath?: string): Promise<unknown[]>;
+  listFilesAndFolders(directoryPath?: string): Promise<
+    {
+      name: string;
+      isFile: boolean;
+      isDirectory: boolean;
+      size: number;
+      lastModified: string;
+    }[]
+  >;
   readFile(filePath: string): Promise<string>;
   updateFile(filePath: string, newContent: string): Promise<string>;
   deleteFileOrFolder(targetPath: string): Promise<void>;

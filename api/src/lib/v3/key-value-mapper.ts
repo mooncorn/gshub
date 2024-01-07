@@ -1,7 +1,9 @@
 export class KeyValueMapper<K extends string | number, V> {
   constructor(public separator: string) {}
 
-  mapArrayToObject(arr: string[]): Record<K, V> {
+  mapArrayToObject(arr: string[] | undefined): Record<K, V> {
+    if (!arr || arr.length === 0) return {} as Record<K, V>;
+
     const map = new Map<K, V>();
 
     for (const item of arr) {
@@ -17,7 +19,9 @@ export class KeyValueMapper<K extends string | number, V> {
     return Object.fromEntries(map) as Record<K, V>;
   }
 
-  mapObjectToArray(obj: Record<K, V>): string[] {
+  mapObjectToArray(obj: Record<K, V> | undefined): string[] {
+    if (!obj) return [];
+
     const arr = [];
     for (const [key, value] of Object.entries(obj)) {
       arr.push(`${key}${this.separator}${value}`);

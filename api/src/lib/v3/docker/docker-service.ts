@@ -1,18 +1,12 @@
-import path from "path";
 import fs from "fs/promises";
 import Docker from "dockerode";
 import { FileExplorer, IFileExplorer } from "../files/file-explorer";
 import { KeyValueMapper } from "../key-value-mapper";
-import {
-  ContainerEnv,
-  ContainerInfo,
-  ContainerPortBinds,
-  DockerContainer,
-  IContainer,
-} from "./docker-container";
+import { ContainerInfo, DockerContainer, IContainer } from "./docker-container";
 import { IEventEmitter } from "../event-emitter";
 import EventEmitter from "events";
 import { BadRequestError } from "../../exceptions/bad-request-error";
+import path from "path";
 
 export type Callback<T> = (data: T) => void;
 
@@ -20,9 +14,9 @@ export type ListContainersOpts = (container: ContainerInfo) => boolean;
 export type CreateContainerOpts = {
   name: string;
   image: string;
-  env?: ContainerEnv;
+  env?: Record<string, string>;
   volumeBinds?: string[];
-  portBinds?: ContainerPortBinds;
+  portBinds?: Record<string, number>;
 };
 export type UpdateContainerOpts = {
   id: string;
@@ -69,9 +63,7 @@ export class DockerService implements IDocker {
 
       let files: IFileExplorer | undefined;
 
-      const volumeBinds = this.parseHostPathsToVolumeBinds(
-        info.HostConfig.Binds
-      );
+      const volumeBinds = this.mapToInternalVolumeBinds(info.HostConfig.Binds);
 
       if (volumeBinds) {
         files = new FileExplorer(
@@ -85,8 +77,8 @@ export class DockerService implements IDocker {
           name: info.Name,
           image: info.Config.Image,
           env: this.keyValueMapper.mapArrayToObject(info.Config.Env),
-          volumeBinds,
-          portBinds: info.HostConfig.PortBindings,
+          volumeBinds: this.mapToInternalVolumeBinds(info.HostConfig.Binds),
+          portBinds: this.mapToInternalPortBinds(info.HostConfig.PortBindings),
         },
         container,
         files,
@@ -106,6 +98,8 @@ export class DockerService implements IDocker {
    * @throws `BadRequestError` if the container does not exist.
    */
   public getContainer(id: string): IContainer {
+    this.ensureInitialized();
+
     const container = this.containers.get(id);
     if (!container) {
       throw new BadRequestError(`Container with ID ${id} does not exist.`);
@@ -120,6 +114,8 @@ export class DockerService implements IDocker {
    * @returns A list of containers.
    */
   public list(filter?: ListContainersOpts): IContainer[] {
+    this.ensureInitialized();
+
     const containers = [...this.containers.values()];
 
     if (filter) {
@@ -137,6 +133,8 @@ export class DockerService implements IDocker {
    * @throws `BadRequestError` if the name is invalid or already in use.
    */
   public async create(opts: CreateContainerOpts): Promise<IContainer> {
+    this.ensureInitialized();
+
     const name = this.parseName(opts.name);
 
     if (this.containerNameExists(name)) {
@@ -147,10 +145,10 @@ export class DockerService implements IDocker {
       Image: opts.image,
       name,
       Tty: true,
-      Env: this.keyValueMapper.mapObjectToArray(opts.env || {}),
+      Env: this.keyValueMapper.mapObjectToArray(opts.env),
       HostConfig: {
-        Binds: this.parseVolumeBindsToHostPaths(name, opts.volumeBinds),
-        PortBindings: opts.portBinds,
+        Binds: this.mapToExternalVolumeBinds(name, opts.volumeBinds),
+        PortBindings: this.mapToExternalPortBinds(opts.portBinds),
       },
     });
 
@@ -168,8 +166,8 @@ export class DockerService implements IDocker {
         name: info.Name,
         image: info.Config.Image,
         env: this.keyValueMapper.mapArrayToObject(info.Config.Env),
-        volumeBinds: this.parseHostPathsToVolumeBinds(info.HostConfig.Binds),
-        portBinds: info.HostConfig.PortBindings,
+        volumeBinds: this.mapToInternalVolumeBinds(info.HostConfig.Binds),
+        portBinds: this.mapToInternalPortBinds(info.HostConfig.PortBindings),
       },
       container,
       files,
@@ -189,6 +187,8 @@ export class DockerService implements IDocker {
    * @returns A promise that resolves to the deleted container.
    */
   public async delete(id: string, deleteVolume: boolean): Promise<IContainer> {
+    this.ensureInitialized();
+
     const container = this.getContainer(id);
 
     // Remove container from docker
@@ -211,6 +211,8 @@ export class DockerService implements IDocker {
    * @returns A promise that resolves to the updated container.
    */
   public async update(opts: UpdateContainerOpts): Promise<IContainer> {
+    this.ensureInitialized();
+
     if (opts.update.name) {
       const name = this.parseName(opts.update.name);
 
@@ -248,7 +250,7 @@ export class DockerService implements IDocker {
     return container;
   }
 
-  private parseVolumeBindsToHostPaths(
+  private mapToExternalVolumeBinds(
     containerName: string,
     volumeBinds: string[] | undefined
   ): string[] | undefined {
@@ -260,12 +262,50 @@ export class DockerService implements IDocker {
     );
   }
 
-  private parseHostPathsToVolumeBinds(
+  private mapToInternalVolumeBinds(
     hostPaths: string[] | undefined
   ): string[] | undefined {
     if (!hostPaths || hostPaths.length === 0) return;
 
     return hostPaths.map((hostPath) => hostPath.split(":")[1]);
+  }
+
+  private mapToInternalPortBinds(
+    portBinds:
+      | {
+          [key: string]: { HostPort: string }[];
+        }
+      | undefined
+  ): Record<string, number> {
+    if (!portBinds) return {};
+
+    const parsed: Record<string, number> = {};
+
+    for (let [key, value] of Object.entries(portBinds)) {
+      if (value.length === 0) continue;
+
+      parsed[key] = parseInt(value.at(0)!.HostPort);
+    }
+
+    return parsed;
+  }
+
+  private mapToExternalPortBinds(
+    portBinds: Record<string, number> | undefined
+  ): {
+    [key: string]: { HostPort: string }[];
+  } {
+    if (!portBinds) return {};
+
+    const parsed: {
+      [key: string]: { HostPort: string }[];
+    } = {};
+
+    for (let [key, value] of Object.entries(portBinds)) {
+      parsed[key] = [{ HostPort: value.toString() }];
+    }
+
+    return parsed;
   }
 
   private parseName(name: string): string {
@@ -290,5 +330,15 @@ export class DockerService implements IDocker {
     }
 
     await fs.rename(src, dest);
+  }
+
+  public get initialized() {
+    return this.dockerEventStream !== undefined;
+  }
+
+  private ensureInitialized() {
+    if (!this.initialized) {
+      throw new Error("Docker service not initialized");
+    }
   }
 }

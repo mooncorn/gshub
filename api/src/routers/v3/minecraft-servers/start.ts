@@ -5,24 +5,25 @@ import { minecraftServerManager } from "../../../app";
 
 const router = express.Router();
 
-router.get(
-  "/minecraft-servers/",
+router.post(
+  "/minecraft-servers/:id/start",
   currentUser,
   requireAuth,
-  async (_: Request, res: Response) => {
-    const servers = minecraftServerManager.list();
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const server = await minecraftServerManager.start(id);
 
-    const results = servers.map((server) => ({
+    const files: boolean = !!server.files;
+
+    res.json({
       id: server.id,
       name: server.name,
       running: server.running,
-      files: !!server.files,
+      files,
       type: server.type,
       version: server.version,
-    }));
-
-    res.json(results);
+    });
   }
 );
 
-export { router as minecraftGetAllRouter };
+export { router as minecraftStartRouter };

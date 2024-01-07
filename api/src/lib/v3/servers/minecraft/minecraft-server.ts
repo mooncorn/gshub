@@ -1,13 +1,15 @@
 import { IContainer } from "../../docker/docker-container";
 import { Server } from "../server";
+import { MinecraftWhitelistManager } from "./minecraft-whitelist-manager";
+import { MinecraftWorldManager } from "./minecraft-world-manager";
 
 export class MinecraftServer extends Server {
-  public readonly type: string;
-  public readonly version: string;
+  public readonly worlds: MinecraftWorldManager;
+  public readonly whitelist: MinecraftWhitelistManager;
 
-  constructor(container: IContainer) {
+  constructor(protected container: IContainer) {
     super(container);
-    this.type = container.env.TYPE;
-    this.version = container.env.VERSION;
+    this.worlds = new MinecraftWorldManager(this);
+    this.whitelist = new MinecraftWhitelistManager(this);
   }
 }

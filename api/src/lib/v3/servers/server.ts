@@ -7,23 +7,32 @@ export interface IServer {
   readonly image: string;
   readonly env: Record<string, string>;
   readonly volumeBinds?: string[];
-  readonly portBinds?: Record<string, { HostPort: string }[]>;
-  files: IFileExplorer | undefined;
+  readonly portBinds?: Record<string, number>;
+  readonly running: boolean;
+  readonly files: IFileExplorer | undefined;
   start(): Promise<void>;
   stop(): Promise<void>;
   restart(): Promise<void>;
   getLogs(limit: number): Promise<string>;
-  isRunning(): Promise<boolean>;
 }
 
 export class Server implements IServer {
   constructor(protected container: IContainer) {}
 
-  public start = async () => await this.container.start();
+  public start = async () => {
+    await this.container.start();
+    this.container.running = true;
+  };
 
-  public stop = async () => await this.container.stop();
+  public stop = async () => {
+    await this.container.stop();
+    this.container.running = false;
+  };
 
-  public restart = async () => await this.container.restart();
+  public restart = async () => {
+    await this.container.restart();
+    this.container.running = true;
+  };
 
   public getLogs = async (limit: number) => await this.container.getLogs(limit);
 
@@ -51,7 +60,9 @@ export class Server implements IServer {
     return this.container.portBinds;
   }
 
-  public isRunning = () => this.container.isRunning();
+  public get running() {
+    return this.container.running;
+  }
 
   public get files() {
     return this.container.files;

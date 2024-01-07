@@ -14,15 +14,12 @@ router.get(
     const { id } = req.params;
     const server = minecraftServerManager.get(id);
 
-    if (!server) throw new NotFoundError("Server not found");
-
-    const running = await server.isRunning();
     const files: boolean = !!server.files;
 
     res.json({
       id: server.id,
       name: server.name,
-      running,
+      running: server.running,
       files,
       type: server.type,
       version: server.version,

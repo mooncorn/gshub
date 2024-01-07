@@ -1,28 +1,31 @@
 import express, { Request, Response } from "express";
 import { currentUser } from "../../../middleware/current-user";
 import { requireAuth } from "../../../middleware/require-auth";
-import { minecraftServerManager } from "../../../app";
+import { docker } from "../../../app";
 import { body } from "express-validator";
-import { versions } from "../../../lib/v3/servers/minecraft/minecraft-versions";
 import { validateRequest } from "../../../middleware/validate-request";
-import { types } from "../../../lib/v3/servers/minecraft/minecraft-types";
+import { config } from "../../../config";
+import { MinecraftServer } from "../../../lib/v3/servers/minecraft/minecraft-server";
 
 const router = express.Router();
 
 const validations = [
-  body("name").isString().isLength({ min: 4, max: 16 }),
+  body("name")
+    .isString()
+    .isLength({ min: config.params.name.min, max: config.params.name.max })
+    .isAlphanumeric(),
   body("type")
-    .optional()
-    .isString()
+    .default(config.minecraft.default.type)
     .toUpperCase()
-    .isIn(types)
-    .default(types[0]),
+    .isIn(config.minecraft.types),
   body("version")
-    .optional()
-    .isString()
+    .default(config.minecraft.default.version)
     .toUpperCase()
-    .isIn(versions)
-    .default(versions[0]),
+    .isIn(config.minecraft.versions),
+  body("port")
+    .default(config.minecraft.default.port)
+    .toInt()
+    .isInt({ min: 1024, max: 65535 }),
 ];
 
 router.post(
@@ -31,24 +34,29 @@ router.post(
   currentUser,
   requireAuth,
   async (req: Request, res: Response) => {
-    const { name, type, version } = req.body;
+    const { name, type, version, port } = req.body;
 
-    const server = await minecraftServerManager.create({
+    const container = await docker.create({
       name,
-      type,
-      version,
+      image: config.minecraft.image,
+      env: {
+        ...config.minecraft.default.env,
+        TYPE: type,
+        VERSION: version,
+      },
+      portBinds: { [config.minecraft.internalPort]: port },
     });
 
-    const running = await server.isRunning();
-    const files: boolean = !!server.files;
+    const server = new MinecraftServer(container);
 
     res.json({
       id: server.id,
       name: server.name,
-      running,
-      files,
-      type: server.type,
-      version: server.version,
+      running: server.running,
+      files: !!server.files,
+      type: server.env.TYPE,
+      version: server.env.VERSION,
+      port: server.portBinds && server.portBinds[config.minecraft.internalPort],
     });
   }
 );

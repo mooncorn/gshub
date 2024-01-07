@@ -1,5 +1,5 @@
 export const versions = [
-  "latest",
+  "LATEST",
   "1.20.2",
   "1.20.1",
   "1.20",

@@ -1,10 +1,8 @@
-import { Container } from 'dockerode';
-import { IFileExplorer } from '../files/file-explorer';
-import { IEventEmitter } from '../event-emitter';
-import EventEmitter from 'events';
+import { Container } from "dockerode";
+import { IFileExplorer } from "../files/file-explorer";
+import { IEventEmitter } from "../event-emitter";
+import EventEmitter from "events";
 
-export type ContainerEnv = Record<string, string>;
-export type ContainerPortBinds = Record<string, { HostPort: string }[]>;
 export type ContainerEventData<T> = {
   container: {
     id: string;
@@ -17,41 +15,43 @@ export interface ContainerInfo {
   id: string;
   name: string;
   image: string;
-  env: ContainerEnv;
+  env: Record<string, string>;
   volumeBinds?: string[];
-  portBinds?: ContainerPortBinds;
+  portBinds?: Record<string, number>;
 }
 
 export interface IContainer extends ContainerInfo {
   files: IFileExplorer | undefined;
+  running: boolean;
+  init(): Promise<void>;
   start(): Promise<void>;
   stop(): Promise<void>;
   restart(): Promise<void>;
-  isRunning(): Promise<boolean>;
   getLogs(limit: number): Promise<string>;
 }
 
 export declare interface DockerContainer {
   on(
-    event: 'running',
+    event: "running",
     callback: (data: ContainerEventData<{ running: boolean }>) => void
   ): void;
   on(
-    event: 'logs',
+    event: "logs",
     callback: (data: ContainerEventData<{ logs: string }>) => void
   ): void;
 }
 
 export class DockerContainer implements IContainer {
-  private readonly STATUS_CHANGED_EVENT = 'statusChanged';
-  private readonly LOGS_EVENT = 'logs';
+  private readonly STATUS_CHANGED_EVENT = "statusChanged";
+  private readonly LOGS_EVENT = "logs";
 
   public readonly id: string;
   private _name: string;
   public readonly image: string;
-  public readonly env: ContainerEnv;
+  public readonly env: Record<string, string>;
   public readonly volumeBinds?: string[];
-  public readonly portBinds?: ContainerPortBinds;
+  public readonly portBinds?: Record<string, number>;
+  public running: boolean = false;
 
   constructor(
     info: ContainerInfo,
@@ -70,26 +70,29 @@ export class DockerContainer implements IContainer {
 
   public async init() {
     await this.attachEventListeners();
+    this.running = await this.isRunning();
   }
 
-  public async isRunning(): Promise<boolean> {
+  private async isRunning(): Promise<boolean> {
     const inspectInfo = await this.container.inspect();
     return inspectInfo.State.Running;
   }
 
   private async attachEventListeners() {
-    this.dockerEventStream.on('data', (data) => {
+    this.dockerEventStream.on("data", (data) => {
       const { Actor, status } = JSON.parse(data.toString());
       const eventContainerName = Actor.Attributes.name;
 
       if (eventContainerName !== this.name) return;
 
       switch (status) {
-        case 'start':
+        case "start":
+          this.running = true;
           this.emitStatusChangedEvent(true);
           this.attachContainerOutput();
           break;
-        case 'die':
+        case "die":
+          this.running = false;
           this.emitStatusChangedEvent(false);
           break;
       }
@@ -105,8 +108,8 @@ export class DockerContainer implements IContainer {
         stderr: true,
       },
       (_, stream) => {
-        stream?.on('data', (chunk) => {
-          this.emitLogsEvent(chunk.toString('utf-8'));
+        stream?.on("data", (chunk) => {
+          this.emitLogsEvent(chunk.toString("utf-8"));
         });
       }
     );
@@ -132,7 +135,7 @@ export class DockerContainer implements IContainer {
       tail: limit,
     });
 
-    return buffer.toString('utf-8');
+    return buffer.toString("utf-8");
   }
 
   public on<T>(event: string, callback: (data: T) => void): void {
@@ -170,10 +173,10 @@ export class DockerContainer implements IContainer {
   }
 
   public get name() {
-    return this._name.replace('/', '');
+    return this._name.replace("/", "");
   }
 
   public set name(newName: string) {
-    this._name = '/' + newName;
+    this._name = "/" + newName;
   }
 }
