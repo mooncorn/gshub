@@ -1,7 +1,7 @@
-import { BadRequestError } from "../../../exceptions/bad-request-error";
-import { IDocker } from "../../docker/docker-service";
-import { ServerManager } from "../server-manager";
-import { MinecraftServer } from "./minecraft-server";
+import { BadRequestError } from '../../../exceptions/bad-request-error';
+import { IDocker } from '../../docker/docker-service';
+import { ServerManager } from '../server-manager';
+import { MinecraftServer } from './minecraft-server';
 
 export interface UpdateMinecraftServerOpts {
   name?: string;
@@ -9,35 +9,42 @@ export interface UpdateMinecraftServerOpts {
   type?: string;
 }
 
-export interface CreateMinecraftServerOpts extends UpdateMinecraftServerOpts {
+export interface CreateMinecraftServerOpts {
   name: string;
+  version?: string;
+  type?: string;
 }
 
+const CREATE_DEFAULT_OPTS = {
+  version: 'LATEST',
+  type: 'VANILLA',
+};
+
 export class MinecraftServerManager extends ServerManager<MinecraftServer> {
-  constructor(docker: IDocker, image: string) {
+  constructor(protected docker: IDocker, protected image: string) {
     const servers = docker
       .list()
       .filter((c) => c.image === image)
       .map((c) => new MinecraftServer(c));
-    super(docker, image, servers);
+    super(servers);
   }
 
   public async create(
     opts: CreateMinecraftServerOpts
   ): Promise<MinecraftServer> {
-    const TYPE = opts.type || "VANILLA";
-    const VERSION = opts.version || "LATEST";
+    const TYPE = opts.type || CREATE_DEFAULT_OPTS.type;
+    const VERSION = opts.version || CREATE_DEFAULT_OPTS.version;
 
     const container = await this.docker.create({
       image: this.image,
       name: opts.name,
       env: {
-        EULA: "true",
+        EULA: 'true',
         TYPE,
         VERSION,
       },
-      volumeBinds: ["/data"],
-      portBinds: { "25565/tcp": [{ HostPort: "25565" }] },
+      volumeBinds: ['/data'],
+      portBinds: { '25565/tcp': [{ HostPort: '25565' }] },
     });
 
     const server = new MinecraftServer(container);
@@ -54,11 +61,11 @@ export class MinecraftServerManager extends ServerManager<MinecraftServer> {
 
     // check if server is running
     if (await oldServer.isRunning())
-      throw new BadRequestError("Server has to be stopped to update it");
+      throw new BadRequestError('Server has to be stopped to update it');
 
     const name = opts.name || oldServer.name;
-    const VERSION = opts.version || oldServer.env["VERSION"];
-    const TYPE = opts.type || oldServer.env["TYPE"];
+    const VERSION = opts.version || oldServer.env['VERSION'];
+    const TYPE = opts.type || oldServer.env['TYPE'];
 
     const container = await this.docker.update({
       id,

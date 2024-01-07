@@ -1,7 +1,7 @@
-import { Container } from "dockerode";
-import { IFileExplorer } from "../files/file-explorer";
-import { IEventEmitter } from "../event-emitter";
-import EventEmitter from "events";
+import { Container } from 'dockerode';
+import { IFileExplorer } from '../files/file-explorer';
+import { IEventEmitter } from '../event-emitter';
+import EventEmitter from 'events';
 
 export type ContainerEnv = Record<string, string>;
 export type ContainerPortBinds = Record<string, { HostPort: string }[]>;
@@ -24,7 +24,6 @@ export interface ContainerInfo {
 
 export interface IContainer extends ContainerInfo {
   files: IFileExplorer | undefined;
-  init(): Promise<void>;
   start(): Promise<void>;
   stop(): Promise<void>;
   restart(): Promise<void>;
@@ -34,18 +33,18 @@ export interface IContainer extends ContainerInfo {
 
 export declare interface DockerContainer {
   on(
-    event: "running",
+    event: 'running',
     callback: (data: ContainerEventData<{ running: boolean }>) => void
   ): void;
   on(
-    event: "logs",
+    event: 'logs',
     callback: (data: ContainerEventData<{ logs: string }>) => void
   ): void;
 }
 
 export class DockerContainer implements IContainer {
-  private readonly STATUS_CHANGED_EVENT = "statusChanged";
-  private readonly LOGS_EVENT = "logs";
+  private readonly STATUS_CHANGED_EVENT = 'statusChanged';
+  private readonly LOGS_EVENT = 'logs';
 
   public readonly id: string;
   private _name: string;
@@ -79,18 +78,18 @@ export class DockerContainer implements IContainer {
   }
 
   private async attachEventListeners() {
-    this.dockerEventStream.on("data", (data) => {
+    this.dockerEventStream.on('data', (data) => {
       const { Actor, status } = JSON.parse(data.toString());
       const eventContainerName = Actor.Attributes.name;
 
       if (eventContainerName !== this.name) return;
 
       switch (status) {
-        case "start":
+        case 'start':
           this.emitStatusChangedEvent(true);
           this.attachContainerOutput();
           break;
-        case "die":
+        case 'die':
           this.emitStatusChangedEvent(false);
           break;
       }
@@ -106,8 +105,8 @@ export class DockerContainer implements IContainer {
         stderr: true,
       },
       (_, stream) => {
-        stream?.on("data", (chunk) => {
-          this.emitLogsEvent(chunk.toString("utf-8"));
+        stream?.on('data', (chunk) => {
+          this.emitLogsEvent(chunk.toString('utf-8'));
         });
       }
     );
@@ -133,7 +132,7 @@ export class DockerContainer implements IContainer {
       tail: limit,
     });
 
-    return buffer.toString("utf-8");
+    return buffer.toString('utf-8');
   }
 
   public on<T>(event: string, callback: (data: T) => void): void {
@@ -171,10 +170,10 @@ export class DockerContainer implements IContainer {
   }
 
   public get name() {
-    return this._name.replace("/", "");
+    return this._name.replace('/', '');
   }
 
   public set name(newName: string) {
-    this._name = "/" + newName;
+    this._name = '/' + newName;
   }
 }
