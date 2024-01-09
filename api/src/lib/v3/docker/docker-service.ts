@@ -341,4 +341,70 @@ export class DockerService implements IDocker {
       throw new Error("Docker service not initialized");
     }
   }
+
+  /**
+   * Starts a container. Throws an error if a container with the same portBinds is already running.
+   * @param id
+   */
+  public async start(id: string) {
+    this.ensureInitialized();
+
+    const container = this.getContainer(id);
+
+    if (container.running)
+      throw new BadRequestError("Container already running");
+
+    const hasHostPortsInCommon = (
+      a: Record<string, number> | undefined,
+      b: Record<string, number> | undefined
+    ) => {
+      if (!a || !b) return false;
+
+      const aPorts = new Set(Array.from(Object.values(a)));
+      const bPorts = new Set(Array.from(Object.values(b)));
+
+      for (let port of aPorts) {
+        if (bPorts.has(port)) return true;
+      }
+
+      return false;
+    };
+
+    // check if a container with the same portBinds is already running
+    const found = Array.from(this.containers.values()).find(
+      (c) =>
+        c.id !== id &&
+        c.running &&
+        hasHostPortsInCommon(c.portBinds, container.portBinds)
+    );
+
+    if (found)
+      throw new BadRequestError(
+        `A container with the same port bindings is already running: ${found.name}`
+      );
+
+    await container.start();
+  }
+
+  public async stop(id: string) {
+    this.ensureInitialized();
+
+    const container = this.getContainer(id);
+
+    if (!container.running)
+      throw new BadRequestError("Container already stopped");
+
+    await container.stop();
+  }
+
+  public async restart(id: string) {
+    this.ensureInitialized();
+
+    const container = this.getContainer(id);
+
+    if (!container.running)
+      throw new BadRequestError("Container already stopped");
+
+    await container.restart();
+  }
 }

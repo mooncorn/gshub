@@ -11,6 +11,7 @@ import { DockerService } from "./lib/v3/docker/docker-service";
 import { SocketIO } from "./lib/socket-io";
 import { minecraftCreateRouter } from "./routers/v3/minecraft-servers/create";
 import { NotFoundError } from "./lib/exceptions/not-found-error";
+import { minecraftStartRouter } from "./routers/v3/minecraft-servers/start";
 
 const app = express();
 const server = createServer(app);
@@ -38,7 +39,7 @@ app.use("/api/", [
   minecraftCreateRouter,
   // minecraftUpdateRouter,
   // minecraftDeleteRouter,
-  // minecraftStartRouter,
+  minecraftStartRouter,
   // minecraftStopRouter,
   // minecraftRestartRouter,
 ]);
