@@ -7,6 +7,7 @@ export const config = {
   },
   minecraft: {
     image: "itzg/minecraft-server",
+    volumeBinds: ["/data"],
     default: {
       env: {
         EULA: "TRUE",

@@ -52,7 +52,17 @@ export class FileExplorer implements IFileExplorer {
     const fullPath = path.join(this.rootDir, directoryPath);
 
     // Read the contents of the specified directory
-    const filesAndFolders = await fs.readdir(fullPath);
+    let filesAndFolders: string[] = [];
+
+    try {
+      filesAndFolders = await fs.readdir(fullPath);
+    } catch (err) {
+      const e = err as NodeJS.ErrnoException;
+      if (e.code === "ENOENT")
+        throw new BadRequestError("Directory does not exist");
+
+      throw err;
+    }
 
     const result = [];
 

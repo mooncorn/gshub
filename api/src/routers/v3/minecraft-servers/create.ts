@@ -45,6 +45,7 @@ router.post(
         VERSION: version,
       },
       portBinds: { [config.minecraft.internalPort]: port },
+      volumeBinds: config.minecraft.volumeBinds,
     });
 
     const server = new MinecraftServer(container);

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const env = {
   CONTAINERS_DIR: z.string().min(1).parse(process.env.CONTAINERS_DIR),
