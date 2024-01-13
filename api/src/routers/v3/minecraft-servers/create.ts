@@ -25,11 +25,11 @@ const validations = [
   body("port")
     .default(config.minecraft.default.port)
     .toInt()
-    .isInt({ min: 1024, max: 65535 }),
+    .isInt({ min: config.params.port.min, max: config.params.port.max }),
 ];
 
 router.post(
-  "/minecraft-servers/",
+  "/servers/minecraft/",
   validateRequest(validations),
   currentUser,
   requireAuth,
@@ -48,16 +48,16 @@ router.post(
       volumeBinds: config.minecraft.volumeBinds,
     });
 
-    const server = new MinecraftServer(container);
-
     res.json({
-      id: server.id,
-      name: server.name,
-      running: server.running,
-      files: !!server.files,
-      type: server.env.TYPE,
-      version: server.env.VERSION,
-      port: server.portBinds && server.portBinds[config.minecraft.internalPort],
+      id: container.id,
+      name: container.name,
+      running: container.running,
+      files: !!container.files,
+      type: container.env.TYPE,
+      version: container.env.VERSION,
+      port: container.portBinds
+        ? container.portBinds[config.minecraft.internalPort]
+        : null,
     });
   }
 );

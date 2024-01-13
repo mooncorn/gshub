@@ -4,8 +4,13 @@ export const config = {
       min: 4,
       max: 16,
     },
+    port: {
+      min: 1024,
+      max: 65535,
+    },
   },
   minecraft: {
+    name: "minecraft",
     image: "itzg/minecraft-server",
     volumeBinds: ["/data"],
     default: {
@@ -77,8 +82,10 @@ export const config = {
     ],
   },
   valheim: {
+    name: "valheim",
     image: "lloesche/valheim-server",
-    memory: "1G",
-    port: "2456",
+    default: {
+      port: 2456,
+    },
   },
 };

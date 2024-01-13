@@ -12,6 +12,9 @@ import { NotFoundError } from "./lib/exceptions/not-found-error";
 import { minecraftStartRouter } from "./routers/v3/minecraft-servers/start";
 import { env } from "./lib/env";
 import { filesListRouter } from "./routers/v3/files/list";
+import { minecraftDeleteRouter } from "./routers/v3/minecraft-servers/delete";
+import { minecraftGetAllRouter } from "./routers/v3/minecraft-servers/get-all";
+import { minecraftGetOneRouter } from "./routers/v3/minecraft-servers/get-one";
 
 const app = express();
 const server = createServer(app);
@@ -34,11 +37,11 @@ app.use(
 );
 
 app.use("/api/", [
-  // minecraftGetOneRouter,
-  // minecraftGetAllRouter,
+  minecraftGetOneRouter,
+  minecraftGetAllRouter,
   minecraftCreateRouter,
   // minecraftUpdateRouter,
-  // minecraftDeleteRouter,
+  minecraftDeleteRouter,
   minecraftStartRouter,
   // minecraftStopRouter,
   // minecraftRestartRouter,

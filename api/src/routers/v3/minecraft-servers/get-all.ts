@@ -1,24 +1,25 @@
 import express, { Request, Response } from "express";
 import { currentUser } from "../../../middleware/current-user";
 import { requireAuth } from "../../../middleware/require-auth";
-import { minecraftServerManager } from "../../../app";
+import { docker } from "../../../app";
+import { config } from "../../../config";
 
 const router = express.Router();
 
 router.get(
-  "/minecraft-servers/",
+  "/servers/minecraft/",
   currentUser,
   requireAuth,
   async (_: Request, res: Response) => {
-    const servers = minecraftServerManager.list();
+    const containers = docker.list((c) => c.image === config.minecraft.image);
 
-    const results = servers.map((server) => ({
-      id: server.id,
-      name: server.name,
-      running: server.running,
-      files: !!server.files,
-      type: server.type,
-      version: server.version,
+    const results = containers.map((c) => ({
+      id: c.id,
+      name: c.name,
+      running: c.running,
+      files: !!c.files,
+      type: c.env.TYPE,
+      version: c.env.VERSION,
     }));
 
     res.json(results);
