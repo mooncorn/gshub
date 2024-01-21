@@ -1,23 +1,26 @@
 import express, { Request, Response } from "express";
 import { currentUser } from "../../../middleware/current-user";
 import { requireAuth } from "../../../middleware/require-auth";
-import { minecraftServerManager } from "../../../app";
 import { body } from "express-validator";
-import { versions } from "../../../lib/v3/servers/minecraft/minecraft-versions";
 import { validateRequest } from "../../../middleware/validate-request";
-import { types } from "../../../lib/v3/servers/minecraft/minecraft-types";
+import { config } from "../../../config";
 import { BadRequestError } from "../../../lib/exceptions/bad-request-error";
+import { docker } from "../../../app";
 
 const router = express.Router();
 
 const validations = [
-  body("name").optional().isString().isLength({ min: 4, max: 16 }),
-  body("type").optional().isString().toUpperCase().isIn(types),
-  body("version").optional().isString().toUpperCase().isIn(versions),
+  body("name")
+    .optional()
+    .isString()
+    .isLength({ min: config.params.name.min, max: config.params.name.max })
+    .isAlphanumeric(),
+  body("type").optional().toUpperCase().isIn(config.minecraft.types),
+  body("version").optional().toUpperCase().isIn(config.minecraft.versions),
 ];
 
 router.put(
-  "/minecraft-servers/:id",
+  "/servers/minecraft/:id",
   validateRequest(validations),
   currentUser,
   requireAuth,
@@ -25,28 +28,39 @@ router.put(
     const { type, version, name } = req.body;
     const { id } = req.params;
 
-    if (!type && !version && !name)
-      throw new BadRequestError(
-        "You must provide either name, type, or version."
-      );
+    if (!type && !version && !name) {
+      throw new BadRequestError("Nothing to update");
+    }
 
-    const server = await minecraftServerManager.update(id, {
+    console.log(id, req.body);
+
+    const container = docker.getContainer(id);
+
+    const updated = await docker.update(id, {
+      env: {
+        TYPE: type || container.env.TYPE,
+        VERSION: version || container.env.VERSION,
+      },
       name,
-      type,
-      version,
     });
-
-    const running = await server.isRunning();
-    const files: boolean = !!server.files;
 
     res.json({
-      id: server.id,
-      name: server.name,
-      running,
-      files,
-      type: server.type,
-      version: server.version,
+      id: updated.id,
+      name: updated.name,
+      running: updated.running,
+      files: !!updated.files,
+      type: updated.env.TYPE,
+      version: updated.env.VERSION,
     });
+
+    //   {
+    //   id: server.id,
+    //   name: server.name,
+    //   running,
+    //   files,
+    //   type: server.type,
+    //   version: server.version,
+    // }
   }
 );
 

@@ -18,10 +18,7 @@ export type CreateContainerOpts = {
   volumeBinds?: string[];
   portBinds?: Record<string, number>;
 };
-export type UpdateContainerOpts = {
-  id: string;
-  update: Partial<CreateContainerOpts>;
-};
+export type UpdateContainerOpts = Partial<CreateContainerOpts>;
 
 export interface IDocker {
   readonly containersDirectory: string;
@@ -29,7 +26,7 @@ export interface IDocker {
   list(filter?: ListContainersOpts): IContainer[];
   create(opts: CreateContainerOpts): Promise<IContainer>;
   delete(id: string, deleteVolume: boolean): Promise<IContainer>;
-  update(opts: UpdateContainerOpts): Promise<IContainer>;
+  update(id: string, update: UpdateContainerOpts): Promise<IContainer>;
 }
 
 export class DockerService implements IDocker {
@@ -210,30 +207,46 @@ export class DockerService implements IDocker {
    * @param opts The options for updating the container.
    * @returns A promise that resolves to the updated container.
    */
-  public async update(opts: UpdateContainerOpts): Promise<IContainer> {
+  public async update(
+    id: string,
+    update: UpdateContainerOpts
+  ): Promise<IContainer> {
     this.ensureInitialized();
 
-    if (opts.update.name) {
-      const name = this.parseName(opts.update.name);
+    const prevContainer = this.getContainer(id);
 
-      if (this.containerNameExists(name)) {
-        throw new BadRequestError(`Name '${name}' is already in use.`);
+    // TODO: Throw error if container is running
+
+    // If name is being updated, check if it's valid and not in use
+    if (update.name && update.name !== prevContainer.name) {
+      update.name = this.parseName(update.name);
+
+      if (this.containerNameExists(update.name)) {
+        throw new BadRequestError(`Name '${update.name}' is already in use.`);
       }
     }
 
-    const prevContainer = await this.delete(opts.id, false);
+    // Delete container without deleting volume
+    await this.delete(id, false);
 
+    // Create new container with updated options
     const container = await this.create({
-      name: opts.update.name || prevContainer.name,
-      image: opts.update.image || prevContainer.image,
-      env: opts.update.env || prevContainer.env,
-      portBinds: opts.update.portBinds || prevContainer.portBinds,
-      volumeBinds: opts.update.volumeBinds || prevContainer.volumeBinds,
+      name: update.name || prevContainer.name,
+      image: update.image || prevContainer.image,
+      env: {
+        ...prevContainer.env,
+        ...update.env,
+      },
+      portBinds: {
+        ...prevContainer.portBinds,
+        ...update.portBinds,
+      },
+      volumeBinds: update.volumeBinds || prevContainer.volumeBinds,
     });
 
     // Move files to new directory if name changed
     if (
-      opts.update.name &&
+      update.name &&
       container.name !== prevContainer.name &&
       container.files
     ) {

@@ -15,6 +15,7 @@ import { filesListRouter } from "./routers/v3/files/list";
 import { minecraftDeleteRouter } from "./routers/v3/minecraft-servers/delete";
 import { minecraftGetAllRouter } from "./routers/v3/minecraft-servers/get-all";
 import { minecraftGetOneRouter } from "./routers/v3/minecraft-servers/get-one";
+import { minecraftUpdateRouter } from "./routers/v3/minecraft-servers/update";
 
 const app = express();
 const server = createServer(app);
@@ -40,7 +41,7 @@ app.use("/api/", [
   minecraftGetOneRouter,
   minecraftGetAllRouter,
   minecraftCreateRouter,
-  // minecraftUpdateRouter,
+  minecraftUpdateRouter,
   minecraftDeleteRouter,
   minecraftStartRouter,
   // minecraftStopRouter,
