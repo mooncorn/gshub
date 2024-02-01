@@ -15,7 +15,10 @@ export const config = {
     volumeBinds: ["/data"],
     default: {
       env: {
-        EULA: "TRUE",
+        EULA: "true",
+        ENABLE_AUTOPAUSE: "true",
+        MAX_TICK_TIME: "-1",
+        MOTD: "Minecraft Server powered by gshub.pro",
       },
       type: "VANILLA",
       version: "LATEST",

@@ -1,11 +1,11 @@
 import express, { Request, Response } from "express";
-import { currentUser } from "../../../middleware/current-user";
-import { requireAuth } from "../../../middleware/require-auth";
-import { docker } from "../../../app";
+import { currentUser } from "../../../../middleware/current-user";
+import { requireAuth } from "../../../../middleware/require-auth";
+import { docker } from "../../../../app";
 import { body } from "express-validator";
-import { validateRequest } from "../../../middleware/validate-request";
-import { config } from "../../../config";
-import { MinecraftServer } from "../../../lib/v3/servers/minecraft/minecraft-server";
+import { validateRequest } from "../../../../middleware/validate-request";
+import { config } from "../../../../config";
+import { MinecraftServer } from "../../../../lib/v3/servers/minecraft/minecraft-server";
 
 const router = express.Router();
 

@@ -7,15 +7,17 @@ import { createServer } from "./lib/http-server";
 import { errorHandler } from "./middleware/error-handler";
 import { DockerService } from "./lib/v3/docker/docker-service";
 import { SocketIO } from "./lib/socket-io";
-import { minecraftCreateRouter } from "./routers/v3/minecraft-servers/create";
+import { minecraftCreateRouter } from "./routers/v3/servers/minecraft/create";
 import { NotFoundError } from "./lib/exceptions/not-found-error";
-import { minecraftStartRouter } from "./routers/v3/minecraft-servers/start";
+import { minecraftStartRouter } from "./routers/v3/servers/minecraft/start";
 import { env } from "./lib/env";
 import { filesListRouter } from "./routers/v3/files/list";
-import { minecraftDeleteRouter } from "./routers/v3/minecraft-servers/delete";
-import { minecraftGetAllRouter } from "./routers/v3/minecraft-servers/get-all";
-import { minecraftGetOneRouter } from "./routers/v3/minecraft-servers/get-one";
-import { minecraftUpdateRouter } from "./routers/v3/minecraft-servers/update";
+import { minecraftDeleteRouter } from "./routers/v3/servers/minecraft/delete";
+import { minecraftGetAllRouter } from "./routers/v3/servers/minecraft/get-all";
+import { minecraftGetOneRouter } from "./routers/v3/servers/minecraft/get-one";
+import { minecraftUpdateRouter } from "./routers/v3/servers/minecraft/update";
+import { minecraftStopRouter } from "./routers/v3/servers/minecraft/stop";
+import { minecraftRestartRouter } from "./routers/v3/servers/minecraft/restart";
 
 const app = express();
 const server = createServer(app);
@@ -25,7 +27,10 @@ const io = new SocketServer(server, {
   },
 });
 
-const docker = new DockerService(env.CONTAINERS_DIR, new SocketIO(io));
+const docker = new DockerService({
+  containersDirectory: env.CONTAINERS_DIR,
+  eventEmitter: new SocketIO(io),
+});
 
 app.use(express.json());
 app.use(cookieParser());
@@ -44,8 +49,9 @@ app.use("/api/", [
   minecraftUpdateRouter,
   minecraftDeleteRouter,
   minecraftStartRouter,
-  // minecraftStopRouter,
-  // minecraftRestartRouter,
+  minecraftStopRouter,
+  minecraftRestartRouter,
+
   filesListRouter,
 ]);
 

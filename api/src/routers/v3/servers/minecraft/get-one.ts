@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
-import { currentUser } from "../../../middleware/current-user";
-import { requireAuth } from "../../../middleware/require-auth";
-import { docker } from "../../../app";
+import { currentUser } from "../../../../middleware/current-user";
+import { requireAuth } from "../../../../middleware/require-auth";
+import { docker } from "../../../../app";
 
 const router = express.Router();
 

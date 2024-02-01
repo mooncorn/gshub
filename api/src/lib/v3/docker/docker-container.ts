@@ -117,14 +117,17 @@ export class DockerContainer implements IContainer {
 
   public async start() {
     await this.container.start();
+    this.running = true;
   }
 
   public async stop() {
     await this.container.stop();
+    this.running = false;
   }
 
   public async restart() {
-    await this.container.restart();
+    await this.stop();
+    await this.start();
   }
 
   public async getLogs(limit: number): Promise<string> {

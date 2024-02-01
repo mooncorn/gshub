@@ -21,7 +21,7 @@ export type CreateContainerOpts = {
 export type UpdateContainerOpts = Partial<CreateContainerOpts>;
 
 export interface IDocker {
-  readonly containersDirectory: string;
+  getContainersDirectory(): string;
   getContainer(id: string): IContainer;
   list(filter?: ListContainersOpts): IContainer[];
   create(opts: CreateContainerOpts): Promise<IContainer>;
@@ -29,19 +29,32 @@ export interface IDocker {
   update(id: string, update: UpdateContainerOpts): Promise<IContainer>;
 }
 
+interface DockerServiceOpts {
+  containersDirectory: string;
+  docker?: Docker;
+  eventEmitter?: IEventEmitter;
+}
+
 export class DockerService implements IDocker {
   private dockerEventStream: NodeJS.ReadableStream | undefined;
-  private keyValueMapper: KeyValueMapper<string, string>;
-  private containers: Map<string, IContainer>;
-  private docker: Docker;
 
-  constructor(
-    public readonly containersDirectory: string,
-    private eventEmitter: IEventEmitter = new EventEmitter()
-  ) {
-    this.docker = new Docker();
+  private docker: Docker;
+  private containersDirectory: string;
+  private containers: Map<string, IContainer>;
+
+  private eventEmitter: IEventEmitter;
+  private keyValueMapper: KeyValueMapper<string, string>;
+
+  constructor(opts: DockerServiceOpts) {
     this.containers = new Map();
     this.keyValueMapper = new KeyValueMapper("=");
+    this.docker = opts.docker || new Docker();
+    this.containersDirectory = opts.containersDirectory;
+    this.eventEmitter = opts.eventEmitter || new EventEmitter();
+  }
+
+  public getContainersDirectory() {
+    return this.containersDirectory;
   }
 
   /**
@@ -418,6 +431,6 @@ export class DockerService implements IDocker {
     if (!container.running)
       throw new BadRequestError("Container already stopped");
 
-    await container.restart();
+    await container.restart()
   }
 }
