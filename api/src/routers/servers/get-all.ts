@@ -1,10 +1,10 @@
 import express, { Request, Response } from "express";
-import { currentUser } from "../../../middleware/current-user";
-import { requireAuth } from "../../../middleware/require-auth";
-import { docker } from "../../../app";
-import { config } from "../../../config";
+import { currentUser } from "../../middleware/current-user";
+import { requireAuth } from "../../middleware/require-auth";
+import { docker } from "../../app";
 import { query } from "express-validator";
-import { validateRequest } from "../../../middleware/validate-request";
+import { validateRequest } from "../../middleware/validate-request";
+import { getPublicVolumeBinds } from "../../lib/utils";
 
 const router = express.Router();
 
@@ -25,10 +25,11 @@ router.get(
     const results = containers.map((container) => ({
       id: container.id,
       name: container.name,
+      image: container.image,
       running: container.running,
       env: container.env,
       portBinds: container.portBinds,
-      volumeBinds: container.volumeBinds,
+      volumeBinds: getPublicVolumeBinds(container.volumeBinds),
     }));
 
     res.json(results);

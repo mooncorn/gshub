@@ -4,9 +4,8 @@ import fs from "fs";
 import { Express } from "express";
 
 export function createServer(app: Express) {
-  const { cert, ca, key } = getSSLCert();
-
   if (process.env.NODE_ENV === "production") {
+    const { cert, ca, key } = getSSLCert();
     return https.createServer({ cert, ca, key }, app);
   }
 

@@ -147,6 +147,13 @@ export class DockerService implements IDocker {
 
     const name = this.parseName(opts.name);
 
+    // TODO: handle the error
+    await new Promise((resolve, _) =>
+      this.docker.pull(opts.image, (_: any, stream: NodeJS.ReadableStream) =>
+        this.docker.modem.followProgress(stream, resolve)
+      )
+    );
+
     if (this.containerNameExists(name)) {
       throw new BadRequestError(`Name '${name}' is already in use.`);
     }

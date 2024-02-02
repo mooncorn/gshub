@@ -9,11 +9,16 @@ import { DockerService } from "./lib/docker/docker-service";
 import { SocketIO } from "./lib/socket-io";
 import { NotFoundError } from "./lib/exceptions/not-found-error";
 import { env } from "./lib/env";
-import { filesListRouter } from "./routers/v3/files/list";
-import { serversGetAllRouter } from "./routers/v3/servers/get-all";
-import { volumesListRouter } from "./routers/v3/volumes/list";
-import { serversCreateRouter } from "./routers/v3/servers/create";
-import { serversDeleteRouter } from "./routers/v3/servers/delete";
+import { filesListRouter } from "./routers/files/list";
+import { serversGetAllRouter } from "./routers/servers/get-all";
+import { volumesListRouter } from "./routers/volumes/list";
+import { serversCreateRouter } from "./routers/servers/create";
+import { serversDeleteRouter } from "./routers/servers/delete";
+import { serversGetOneRouter } from "./routers/servers/get-one";
+import { serversStartRouter } from "./routers/servers/start";
+import { serversStopRouter } from "./routers/servers/stop";
+import { serversRestartRouter } from "./routers/servers/restart";
+import { serversGetLogsRouter } from "./routers/servers/get-logs";
 
 const app = express();
 const server = createServer(app);
@@ -39,18 +44,14 @@ app.use(
 );
 
 app.use("/api/", [
-  // minecraftGetOneRouter,
-  // minecraftGetAllRouter,
-  // minecraftCreateRouter,
-  // minecraftDeleteRouter,
-  // minecraftStartRouter,
-  // minecraftStopRouter,
-  // minecraftRestartRouter,
-
   serversGetAllRouter,
+  serversGetOneRouter,
   serversCreateRouter,
   serversDeleteRouter,
-
+  serversStartRouter,
+  serversStopRouter,
+  serversRestartRouter,
+  serversGetLogsRouter,
   filesListRouter,
 
   volumesListRouter,

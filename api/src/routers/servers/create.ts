@@ -1,10 +1,11 @@
 import express, { Request, Response } from "express";
 import { body } from "express-validator";
-import { docker } from "../../../app";
-import { currentUser } from "../../../middleware/current-user";
-import { requireAuth } from "../../../middleware/require-auth";
-import { validateRequest } from "../../../middleware/validate-request";
-import { config } from "../../../config";
+import { docker } from "../../app";
+import { currentUser } from "../../middleware/current-user";
+import { requireAuth } from "../../middleware/require-auth";
+import { validateRequest } from "../../middleware/validate-request";
+import { config } from "../../config";
+import { getPublicVolumeBinds } from "../../lib/utils";
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ const validations = [
     .isString()
     .isLength({ min: config.params.name.min, max: config.params.name.max })
     .isAlphanumeric(),
-  body("image").isString().isLength({ min: 1 }).isAlphanumeric(),
+  body("image").isString().isLength({ min: 1 }),
   body("env").default({}).isObject(),
   body("portBinds").default({}).isObject(),
   body("volumeBinds").default([]).isArray(),
@@ -38,10 +39,11 @@ router.post(
     res.json({
       id: container.id,
       name: container.name,
+      image: container.image,
       running: container.running,
       env: container.env,
       portBinds: container.portBinds,
-      volumeBinds: container.volumeBinds,
+      volumeBinds: getPublicVolumeBinds(container.volumeBinds),
     });
   }
 );
