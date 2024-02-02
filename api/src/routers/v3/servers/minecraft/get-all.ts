@@ -17,7 +17,7 @@ router.get(
       id: c.id,
       name: c.name,
       running: c.running,
-      files: !!c.files,
+      hasVolumeBinds: !!c.volumeBinds,
       type: c.env.TYPE,
       version: c.env.VERSION,
     }));

@@ -21,7 +21,6 @@ export interface ContainerInfo {
 }
 
 export interface IContainer extends ContainerInfo {
-  files: IFileExplorer | undefined;
   running: boolean;
   init(): Promise<void>;
   start(): Promise<void>;

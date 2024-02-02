@@ -52,7 +52,7 @@ router.post(
       id: container.id,
       name: container.name,
       running: container.running,
-      files: !!container.files,
+      hasVolumeBinds: !!container.volumeBinds,
       type: container.env.TYPE,
       version: container.env.VERSION,
       port: container.portBinds

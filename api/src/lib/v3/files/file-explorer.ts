@@ -28,7 +28,6 @@ export interface IFileExplorer {
 
 export class FileExplorer implements IFileExplorer {
   public readonly rootDir: string;
-  private readableFileExtensions: string[] | undefined;
   private readableFileRegex: RegExp | undefined;
 
   constructor(rootDir: string) {
@@ -36,7 +35,6 @@ export class FileExplorer implements IFileExplorer {
   }
 
   public setReadableFileExtensions(fileExtensions: string[]) {
-    this.readableFileExtensions = fileExtensions;
     this.readableFileRegex = this.parseFileExtensionsToRegex(fileExtensions);
   }
 

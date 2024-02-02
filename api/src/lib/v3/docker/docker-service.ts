@@ -202,12 +202,7 @@ export class DockerService implements IDocker {
     const container = this.getContainer(id);
 
     // Remove container from docker
-    await this.docker.getContainer(id).remove({ force: true });
-
-    // Remove local volume
-    if (deleteVolume) {
-      container.files?.delete();
-    }
+    await this.docker.getContainer(id).remove({ force: true, v: deleteVolume });
 
     // Remove container from memory
     this.containers.delete(id);
@@ -258,17 +253,9 @@ export class DockerService implements IDocker {
     });
 
     // Move files to new directory if name changed
-    if (
-      update.name &&
-      container.name !== prevContainer.name &&
-      container.files
-    ) {
+    if (update.name && container.name !== prevContainer.name) {
       this.moveDirectory(
         path.join(this.containersDirectory, prevContainer.name),
-        path.join(this.containersDirectory, container.name)
-      );
-
-      container.files = new FileExplorer(
         path.join(this.containersDirectory, container.name)
       );
     }
@@ -431,6 +418,6 @@ export class DockerService implements IDocker {
     if (!container.running)
       throw new BadRequestError("Container already stopped");
 
-    await container.restart()
+    await container.restart();
   }
 }

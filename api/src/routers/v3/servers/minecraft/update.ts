@@ -48,7 +48,7 @@ router.put(
       id: updated.id,
       name: updated.name,
       running: updated.running,
-      files: !!updated.files,
+      hasVolumeBinds: !!updated.volumeBinds,
       type: updated.env.TYPE,
       version: updated.env.VERSION,
     });
