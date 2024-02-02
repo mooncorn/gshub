@@ -5,6 +5,8 @@ import { docker } from "../../../app";
 import { BadRequestError } from "../../../lib/exceptions/bad-request-error";
 import { param, query } from "express-validator";
 import { validateRequest } from "../../../middleware/validate-request";
+import { FileExplorer } from "../../../lib/files/file-explorer";
+import { getContainerDir } from "../../../lib/utils";
 
 const router = express.Router();
 
@@ -24,10 +26,12 @@ router.get(
 
     const container = docker.getContainer(id);
 
-    if (!container.files)
+    if (!container.volumeBinds)
       throw new BadRequestError("Container's volume is not mounted");
 
-    const files = await container.files.listFilesAndFolders(path as string);
+    const fileExplorer = new FileExplorer(getContainerDir(container.name));
+
+    const files = await fileExplorer.listFilesAndFolders(path as string);
 
     res.json({ files });
   }

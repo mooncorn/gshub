@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { IEventEmitter } from "./v3/event-emitter";
+import { IEventEmitter } from "./event-emitter";
 
 export class SocketIO implements IEventEmitter {
   constructor(private io: Server) {}

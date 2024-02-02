@@ -2,37 +2,29 @@ import express, { Request, Response } from "express";
 import { currentUser } from "../../../middleware/current-user";
 import { requireAuth } from "../../../middleware/require-auth";
 import { docker } from "../../../app";
-import { config } from "../../../config";
 import { query } from "express-validator";
 import { validateRequest } from "../../../middleware/validate-request";
 
 const router = express.Router();
 
-const validations = [query("image").optional().isString()];
+const validations = [query("includeVolume").default(false).isBoolean()];
 
-router.get(
-  "/servers/",
+router.delete(
+  "/servers/:id",
   validateRequest(validations),
   currentUser,
   requireAuth,
   async (req: Request, res: Response) => {
-    const { image } = req.query;
+    const { id } = req.params;
+    const { includeVolume } = req.query;
 
-    const containers = docker.list(
-      image ? (c) => c.image !== image : undefined
-    );
+    const container = await docker.delete(id, Boolean(includeVolume));
 
-    const results = containers.map((container) => ({
+    res.json({
       id: container.id,
       name: container.name,
-      running: container.running,
-      env: container.env,
-      portBinds: container.portBinds,
-      volumeBinds: container.volumeBinds,
-    }));
-
-    res.json(results);
+    });
   }
 );
 
-export { router as serversGetAllRouter };
+export { router as serversDeleteRouter };
