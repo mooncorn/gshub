@@ -1,3 +1,3 @@
 export default function Home() {
-  return <div>home page</div>;
+  return <div className="max-w-screen-lg mx-auto p-4">home</div>;
 }

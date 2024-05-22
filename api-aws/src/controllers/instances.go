@@ -21,8 +21,8 @@ var AllowedInstanceTypes = map[string]types.InstanceType{
 }
 
 func GetInstances(ctx *gin.Context) {
-	userID := ctx.MustGet("userID").(string)
-	fmt.Println(userID)
+	email := ctx.MustGet("userEmail").(string)
+	fmt.Println(email)
 
 	instanceClient, err := lib.NewInstanceClient(ctx)
 	if err != nil {

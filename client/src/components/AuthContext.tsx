@@ -58,11 +58,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: res.data.User.Email,
         picture: res.data.User.Picture,
       });
-
-      console.log("logged in");
     } catch (e) {
       if (e instanceof AxiosError) {
-        // user not logged in or token invalid
         console.log("user not logged in or token invalid");
         logout();
       }
