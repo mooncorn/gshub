@@ -26,20 +26,22 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8080"},
+		AllowOrigins:     []string{"http://localhost:3000"},
 		ExposeHeaders:    []string{"Content-Length"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Set-Cookie"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Set-Cookie", "Authorization"},
 		AllowCredentials: true,
 		MaxAge:           time.Hour * 24 * 30, // 30 days
 	}))
 
-	r.POST("/users", func(ctx *gin.Context) {
-		controllers.CreateUser(ctx, db)
+	r.POST("/signin", func(ctx *gin.Context) {
+		controllers.SignIn(ctx, db)
 	})
 
-	r.GET("/instances", func(ctx *gin.Context) {
-		middlewares.Auth(ctx, db)
-	}, controllers.GetInstances)
+	r.GET("/user", middlewares.Auth, func(ctx *gin.Context) {
+		controllers.GetUser(ctx, db)
+	})
+
+	r.GET("/instances", middlewares.Auth, controllers.GetInstances)
 
 	r.GET("/instances/:id", controllers.GetInstance)
 

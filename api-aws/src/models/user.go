@@ -14,6 +14,7 @@ const (
 
 type User struct {
 	gorm.Model
+	Subject string
 	Name    string
 	Email   string `gorm:"uniqueIndex"`
 	Role    Role
