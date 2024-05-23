@@ -5,6 +5,6 @@ const token =
 
 export const base = axios.create({
   baseURL: "http://localhost:8080/",
-  timeout: 1000,
+  timeout: 0,
   headers: { Authorization: `Bearer ${token}` },
 });

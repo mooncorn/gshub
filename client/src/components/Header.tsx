@@ -26,15 +26,15 @@ const Header = () => {
           <Button
             className="gap-x-2"
             variant={"outline"}
-            href="/"
+            href="/instances"
             as={NextLink}
           >
             <Gamepad2 />
             <h1>GSH 3.0</h1>
           </Button>
-          <Link as={NextLink} href={"/instances"}>
+          {/* <Link as={NextLink} href={"/instances"}>
             Instances
-          </Link>
+          </Link> */}
         </div>
         <nav className="flex gap-x-2">
           <Button variant={"outline"} onClick={toggleColorMode}>

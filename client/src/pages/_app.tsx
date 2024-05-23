@@ -13,7 +13,7 @@ const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <div className="min-h-screen">
+    <div className="flex flex-col min-h-screen">
       <style jsx global>
         {`
           :root {
@@ -29,7 +29,9 @@ export default function App({ Component, pageProps }: AppProps) {
             >
               <Header />
 
-              <Component {...pageProps} />
+              <div className="flex-1">
+                <Component {...pageProps} />
+              </div>
 
               <Footer />
             </GoogleOAuthProvider>

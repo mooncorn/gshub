@@ -7,7 +7,13 @@ export enum InstanceType {
   T3Small = "t3.small",
 }
 
-export type InstanceState = "stopped" | "running" | "pending" | "stopping";
+export type InstanceState =
+  | "stopped"
+  | "running"
+  | "pending"
+  | "stopping"
+  | "terminated"
+  | "shutting-down";
 
 export interface Instance {
   Id: string;
