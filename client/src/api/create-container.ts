@@ -15,7 +15,7 @@ export async function createContainer({
   env: string[];
 }) {
   return (
-    await base.post<Container>(`/instances/${instanceId}`, {
+    await base.post<Container>(`/instances/${instanceId}/container`, {
       image,
       ports,
       volume,

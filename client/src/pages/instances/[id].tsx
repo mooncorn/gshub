@@ -1,101 +1,159 @@
 import { getContainer } from "@/api/get-container";
 import { getInstance } from "@/api/get-instance";
-import { startInstance } from "@/api/start-instance";
-import { Container, Instance } from "@/api/types";
-import { Button, Spinner, useToast } from "@chakra-ui/react";
+import { NewMinecraftServer } from "@/components/NewMinecraftServer";
+import { ServerControlPanel } from "@/components/ServerControlPanel";
+import { Button, Heading, Select, Spinner, useToast } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
 import { AxiosError } from "axios";
+import { RefreshCcw } from "lucide-react";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+interface ErrorResponse {
+  message: string;
+}
+
+const gameOptions = [
+  {
+    value: "minecraft",
+    displayName: "Minecraft",
+  },
+  {
+    value: "valheim",
+    displayName: "Valheim",
+  },
+  {
+    value: "palworld",
+    displayName: "Palworld",
+  },
+];
 
 export default function InstancePage() {
+  const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const router = useRouter();
   const toast = useToast();
-  const [container, setContainer] = useState<Container | null>(null);
-  const [instance, setInstance] = useState<Instance | null>(null);
-  const [fetching, setFetching] = useState<boolean>(true);
-
-  if (typeof router.query.id !== "string") router.push("/");
   const instanceId = String(router.query.id);
 
-  const startInstanceRequest = async () => {
-    try {
-      await startInstance({ instanceId });
-    } catch (e) {
-      if (e instanceof AxiosError) {
-        toast({
-          title: "Request failed",
-          description: "Cannot start instance.",
-          status: "error",
-          duration: 2000,
-          isClosable: true,
-        });
-      }
+  let containerState: "found" | "not-found" | null = null;
+  let instanceState: "found" | "not-found" | "not-ready" | null = null;
+
+  const getInstanceQuery = useQuery({
+    queryKey: ["instance"],
+    queryFn: () => getInstance({ instanceId }),
+    gcTime: Infinity,
+    retry: false,
+  });
+
+  const getContainerQuery = useQuery({
+    queryKey: ["container"],
+    queryFn: () => getContainer({ instanceId }),
+    gcTime: Infinity,
+    retry: false,
+  });
+
+  if (getInstanceQuery.isSuccess) {
+    instanceState = "found";
+  } else if (getInstanceQuery.isError) {
+    instanceState = "not-found";
+  }
+
+  if (getContainerQuery.isSuccess) {
+    containerState = "found";
+  } else if (getContainerQuery.isError) {
+    const error = getContainerQuery.error as AxiosError<ErrorResponse>;
+    const errorMessage = error.response?.data?.message!;
+
+    if (errorMessage.includes("container not found")) {
+      containerState = "not-found";
+    } else if (errorMessage.includes("not in a valid state")) {
+      instanceState = "not-ready";
+    } else if (errorMessage.includes("failed to wait")) {
+      getContainerQuery.refetch();
+    }
+  }
+
+  const renderInstanceNotFound = () => (
+    <div className="text-center mt-4">
+      <Heading className="mb-2" size={"md"}>
+        Instance not found
+      </Heading>
+    </div>
+  );
+
+  const renderCheckingForServer = () => (
+    <div className="text-center mt-4">
+      <Heading className="mb-2" size={"md"}>
+        Checking for the server...
+      </Heading>
+      <Spinner />
+    </div>
+  );
+
+  const renderCreateServerForm = (game: string) => {
+    switch (game) {
+      case "minecraft":
+        return (
+          <NewMinecraftServer instanceId={String(getInstanceQuery.data?.Id)} />
+        );
     }
   };
 
-  useEffect(() => {
-    const fetchInstance = async () => {
-      try {
-        const { data } = await getInstance({ instanceId });
-        setFetching(false);
-        setInstance(data);
-      } catch (e) {
-        if (e instanceof AxiosError) {
-          setFetching(false);
-          toast({
-            title: "Request failed",
-            description: "Cannot fetch instance.",
-            status: "error",
-            duration: 2000,
-            isClosable: true,
-          });
-        }
-      }
-    };
-    const fetchContainer = async () => {
-      try {
-        const res = await getContainer({ instanceId: String(router.query.id) });
-        setContainer(res.data);
-      } catch (e) {
-        if (e instanceof AxiosError) {
-          // toast({
-          //   title: "Request failed",
-          //   description: "Cannot fetch container.",
-          //   status: "error",
-          //   duration: 2000,
-          //   isClosable: true,
-          // });
-        }
-      }
-    };
+  const renderGameOptions = () =>
+    gameOptions.map((game, i) => (
+      <option key={game.value} value={game.value}>
+        {game.displayName}
+      </option>
+    ));
 
-    fetchInstance();
-    fetchContainer();
-  }, []);
-
-  // If the instance is being fetched, return a spinner.
-  if (fetching)
-    return (
-      <div className="flex max-w-screen-lg justify-center">
-        <Spinner className="m-4" />
+  const renderSelectGameOptions = () => (
+    <>
+      <div className="mb-2">
+        <Heading className="mb-2" size={"md"}>
+          Create Server
+        </Heading>
+        <Select
+          placeholder="Select game"
+          onChange={(e) => setSelectedGame(e.target.value)}
+        >
+          {renderGameOptions()}
+        </Select>
       </div>
-    );
+      {selectedGame && renderCreateServerForm(selectedGame)}
+    </>
+  );
 
-  // If the instance is stopped, display a button to start it.
-  if (instance?.State === "stopped") {
-    return (
-      <div className="flex max-w-screen-lg justify-center">
-        <Button className="m-4" onClick={startInstanceRequest}>
-          Start Instance
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-screen-lg mx-auto p-4">
-      {router.query.id}
-      <>{container?.Env[0]}</>
+  const renderInstanceNotReady = () => (
+    <div className="text-center mt-4">
+      <Heading size={"md"} className="mb-2">
+        Instance initializing...
+      </Heading>
+      <Button onClick={() => getContainerQuery.refetch()}>
+        <RefreshCcw />
+      </Button>
     </div>
   );
+
+  const renderServer = () => <ServerControlPanel />;
+
+  const renderContent = () => {
+    switch (instanceState) {
+      case null:
+        return renderCheckingForServer();
+      case "not-found":
+        return renderInstanceNotFound();
+      case "not-ready":
+        return renderInstanceNotReady();
+    }
+
+    switch (containerState) {
+      case null:
+        return renderCheckingForServer();
+      case "found":
+        return renderServer();
+      case "not-found":
+        return renderSelectGameOptions();
+    }
+  };
+
+  return <div className="max-w-screen-lg mx-auto p-4">{renderContent()}</div>;
 }

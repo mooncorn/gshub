@@ -15,6 +15,7 @@ export const InstanceList = () => {
     queryKey: ["instances"],
     queryFn: getInstances,
     refetchInterval: 60000, // 1 minute
+    gcTime: Infinity,
   });
 
   const startInstanceMutation = useMutation({

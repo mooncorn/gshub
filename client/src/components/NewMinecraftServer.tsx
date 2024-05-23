@@ -1,5 +1,4 @@
 import { createContainer } from "@/api/create-container";
-import { createInstance } from "@/api/create-instance";
 import { getMinecraftVersions } from "@/api/get-minecraft-versions";
 import {
   Table,
@@ -15,15 +14,15 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/router";
 import { useState } from "react";
 
 interface NewMinecraftServerProps {
-  instanceType: string;
+  instanceId: string;
 }
 
-export const NewMinecraftServer = ({
-  instanceType,
-}: NewMinecraftServerProps) => {
+export const NewMinecraftServer = ({ instanceId }: NewMinecraftServerProps) => {
+  const router = useRouter();
   const [version, setVersion] = useState("LATEST");
   const [type, setType] = useState("VANILLA");
 
@@ -32,50 +31,6 @@ export const NewMinecraftServer = ({
     queryKey: ["minecraft-versions"],
     queryFn: getMinecraftVersions,
   });
-
-  const renderMinecraftVersions = () =>
-    getMinecraftVersionsQuery.data?.versions
-      .filter((v) => v.type === "release")
-      .map((v) => (
-        <option key={v.id} value={v.id}>
-          {v.id}
-        </option>
-      ));
-
-  const createInstanceMutation = useMutation({
-    mutationFn: createInstance,
-    onSuccess: (data) => {
-      toast({
-        title: "Instance created",
-        status: "success",
-        duration: 1000,
-        isClosable: true,
-      });
-      createContainerMutation.mutate({
-        instanceId: data.Id,
-        image: "itzg/minecraft-server",
-        ports: ["25565:25565"],
-        volume: "",
-        env: ["EULA=TRUE", `TYPE=`, `VERSION=`],
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Failed to start instance",
-        status: "error",
-        duration: 1000,
-        isClosable: true,
-      });
-    },
-  });
-
-  // createContainerMutation.mutate({
-  //   instanceId: data.Id,
-  //   image: "itzg/minecraft-server",
-  //   ports: ["25565:25565"],
-  //   volume: "",
-  //   env: ["EULA=TRUE", `TYPE=`, `VERSION=`],
-  // });
 
   const createContainerMutation = useMutation({
     mutationFn: createContainer,
@@ -86,17 +41,26 @@ export const NewMinecraftServer = ({
         duration: 1000,
         isClosable: true,
       });
+      router.push("/instances");
     },
     onError: () => {
       toast({
-        title: "Failed to start instance",
+        title: "Failed to create container",
         status: "error",
         duration: 1000,
         isClosable: true,
       });
     },
-    retry: true,
   });
+
+  const renderMinecraftVersions = () =>
+    getMinecraftVersionsQuery.data?.versions
+      .filter((v) => v.type === "release")
+      .map((v) => (
+        <option key={v.id} value={v.id}>
+          {v.id}
+        </option>
+      ));
 
   return (
     <>
@@ -137,7 +101,17 @@ export const NewMinecraftServer = ({
           </Tbody>
         </Table>
       </TableContainer>
-      <Button onClick={() => createInstanceMutation.mutate({ instanceType })}>
+      <Button
+        onClick={() =>
+          createContainerMutation.mutate({
+            instanceId,
+            image: "itzg/minecraft-server",
+            ports: ["25565:25565"],
+            volume: "/minecraft:/data",
+            env: ["EULA=TRUE", `TYPE=${type}`, `VERSION=${version}`],
+          })
+        }
+      >
         Create
       </Button>
     </>

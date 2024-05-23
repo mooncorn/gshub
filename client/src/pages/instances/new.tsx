@@ -60,21 +60,6 @@ const plans: Plan[] = [
   },
 ];
 
-const gameOptions = [
-  {
-    value: "minecraft",
-    displayName: "Minecraft",
-  },
-  {
-    value: "valheim",
-    displayName: "Valheim",
-  },
-  {
-    value: "palworld",
-    displayName: "Palworld",
-  },
-];
-
 export default function NewInstancePage() {
   const toast = useToast();
   const router = useRouter();
@@ -139,13 +124,6 @@ export default function NewInstancePage() {
         </Card>
       );
     });
-
-  // const renderGameOptions = () =>
-  //   gameOptions.map((game, i) => (
-  //     <option key={game.value} value={game.value}>
-  //       {game.displayName}
-  //     </option>
-  //   ));
 
   return (
     <div className="max-w-screen-lg mx-auto p-4">
