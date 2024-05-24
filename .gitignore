@@ -129,3 +129,4 @@ dist
 /server-data/*
 ssl
 containers
+vendor
