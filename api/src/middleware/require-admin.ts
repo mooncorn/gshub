@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { UnauthorizedRequestError } from '../lib/exceptions/unauthorized-request-error';
+import { Request, Response, NextFunction } from "express";
+import { UnauthorizedRequestError } from "../lib/exceptions/unauthorized-request-error";
 
 // requireAdmin assumes the request has already
 // been processed by currentUser and requireAuth middleware
@@ -8,7 +8,7 @@ export const requireAdmin = (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
+  if (!req.user || req.user.role !== "ADMIN") {
     throw new UnauthorizedRequestError();
   }
 
