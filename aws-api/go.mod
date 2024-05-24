@@ -1,4 +1,4 @@
-module dasior/cloudservers
+module github.com/mooncorn/gshub/aws-api
 
 go 1.22.0
 

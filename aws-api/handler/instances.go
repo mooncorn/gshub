@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"dasior/cloudservers/src/lib"
+	"github.com/mooncorn/gshub/aws-api/src/lib"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/gin-gonic/gin"
