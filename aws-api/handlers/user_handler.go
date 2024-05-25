@@ -43,7 +43,7 @@ func GetUser(c *gin.Context) {
 	}
 
 	// Return the user information as JSON
-	c.JSON(http.StatusOK, gin.H{"User": user})
+	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 // SignIn handles user sign-in, validates the ID token, and creates or updates the user in the database.
@@ -117,5 +117,5 @@ func SignIn(c *gin.Context) {
 	}
 
 	// Respond with the token and user information
-	c.JSON(http.StatusOK, gin.H{"Token": tokenString, "User": existingUser})
+	c.JSON(http.StatusOK, gin.H{"token": tokenString, "user": existingUser})
 }

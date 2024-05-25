@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -16,7 +18,10 @@ const (
 
 // User represents a user in the system
 type User struct {
-	gorm.Model
-	Email string   `gorm:"uniqueIndex;not null"` // Ensures email is unique and not null
-	Role  UserRole `gorm:"not null"`             // Ensures role is not null
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	Email     string         `gorm:"uniqueIndex;not null" json:"email"` // Ensures email is unique and not null
+	Role      UserRole       `gorm:"not null" json:"role"`              // Ensures role is not null
 }

@@ -1,15 +1,22 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
 
-// Plan represents a instance type in the system
+	"gorm.io/gorm"
+)
+
+// Plan represents an instance type in the system
 type Plan struct {
-	gorm.Model
-	InstanceType string  `gorm:"not null"` // Type of instance
-	Name         string  `gorm:"not null"` // Name of the plan
-	VCores       int     `gorm:"not null"` // Number of virtual cores
-	Memory       int     `gorm:"not null"` // Amount of memory in MB
-	Price        float64 `gorm:"not null"` // Price of the plan per month
-	Disk         int     `gorm:"not null"` // Disk space in GB
-	Enabled      bool    `gorm:"not null"` // Indicates if the plan is enabled
+	ID           uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	InstanceType string         `gorm:"not null" json:"instanceType"` // Type of instance
+	Name         string         `gorm:"not null" json:"name"`         // Name of the plan
+	VCores       int            `gorm:"not null" json:"vCores"`       // Number of virtual cores
+	Memory       int            `gorm:"not null" json:"memory"`       // Amount of memory in MB
+	Price        float64        `gorm:"not null" json:"price"`        // Price of the plan per month
+	Disk         int            `gorm:"not null" json:"disk"`         // Disk space in GB
+	Enabled      bool           `gorm:"not null" json:"enabled"`      // Indicates if the plan is enabled
 }

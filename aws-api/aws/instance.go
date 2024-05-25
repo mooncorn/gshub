@@ -17,11 +17,11 @@ import (
 )
 
 type Instance struct {
-	Id         string
-	Type       string
-	LaunchTime time.Time
-	PublicIp   string
-	State      string
+	Id         string    `json:"id"`
+	Type       string    `json:"type"`
+	LaunchTime time.Time `json:"launchTime"`
+	PublicIp   string    `json:"publicIp"`
+	State      string    `json:"state"`
 }
 
 type InstanceClient struct {
@@ -77,6 +77,10 @@ func (c *InstanceClient) CreateInstance(ctx context.Context, instanceType types.
 }
 
 func (c *InstanceClient) GetInstances(ctx context.Context, instanceIds []string) ([]Instance, error) {
+	if len(instanceIds) == 0 {
+		return []Instance{}, nil
+	}
+
 	result, err := c.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
 		InstanceIds: instanceIds,
 	})

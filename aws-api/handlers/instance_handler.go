@@ -20,7 +20,7 @@ func CreateInstance(c *gin.Context) {
 
 	// Bind JSON input to the request structure
 	if err := c.BindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Error": "Invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
@@ -30,28 +30,28 @@ func CreateInstance(c *gin.Context) {
 	dbInstance := db.GetDatabase()
 	var user models.User
 	if err := dbInstance.GetDB().Where(&models.User{Email: email}).First(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Invalid user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user"})
 		return
 	}
 
 	// Get Plan
 	var plan models.Plan
 	if err := dbInstance.GetDB().First(&plan, request.PlanID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Invalid plan"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid plan"})
 		return
 	}
 
 	// Get Service
 	var service models.Service
 	if err := dbInstance.GetDB().First(&service, request.ServiceID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Invalid service"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid service"})
 		return
 	}
 
 	// Create new instance AWS EC2 instance
 	ec2InstanceClient, err := aws.NewInstanceClient(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Could not create instance client"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create instance client"})
 		return
 	}
 
@@ -62,7 +62,7 @@ func CreateInstance(c *gin.Context) {
 		Ports:  strings.Split(service.Ports, ","),
 	})
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Error": "Could not create instance", "Details": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Could not create instance", "details": err.Error()})
 		return
 	}
 
@@ -74,12 +74,12 @@ func CreateInstance(c *gin.Context) {
 	}
 
 	if err := dbInstance.GetDB().Create(&server).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to create server"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create server"})
 		ec2InstanceClient.TerminateInstance(c, ec2Instance.Id)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"Server": server})
+	c.JSON(http.StatusCreated, gin.H{"server": server})
 }
 
 func GetInstances(c *gin.Context) {
@@ -89,20 +89,20 @@ func GetInstances(c *gin.Context) {
 	dbInstance := db.GetDatabase()
 	var user models.User
 	if err := dbInstance.GetDB().Where(&models.User{Email: email}).First(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Invalid user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user"})
 		return
 	}
 
 	// Get servers that belong to the user
 	var servers []models.Server
 	if err := dbInstance.GetDB().Where(&models.Server{UserID: user.ID}).Find(&servers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to fetch servers"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch servers"})
 		return
 	}
 
 	instanceClient, err := aws.NewInstanceClient(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to create instance client"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create instance client"})
 		return
 	}
 
@@ -113,7 +113,7 @@ func GetInstances(c *gin.Context) {
 
 	instances, err := instanceClient.GetInstances(c, instanceIds)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Error": "Failed to get instances"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get instances"})
 		return
 	}
 

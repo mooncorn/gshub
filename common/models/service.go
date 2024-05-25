@@ -1,17 +1,24 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Service represents a service that can be part of a plan
 type Service struct {
-	gorm.Model
-	NameID   string `gorm:"uniqueIndex"` // Unique identifier
-	MinMem   int    `gorm:"not null"`    // Minimum memory required in MB
-	RecMem   int    `gorm:"not null"`    // Recommended memory in MB
-	Name     string `gorm:"not null"`    // Short name of the service
-	NameLong string `gorm:"not null"`    // Full name of the service
-	Image    string `gorm:"not null"`    // Image of the docker container
-	Env      string
-	Volume   string `gorm:"not null"`
-	Ports    string `gorm:"not null"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	NameID    string         `gorm:"uniqueIndex" json:"nameId"` // Unique identifier
+	MinMem    int            `gorm:"not null" json:"minMem"`    // Minimum memory required in MB
+	RecMem    int            `gorm:"not null" json:"recMem"`    // Recommended memory in MB
+	Name      string         `gorm:"not null" json:"name"`      // Short name of the service
+	NameLong  string         `gorm:"not null" json:"nameLong"`  // Full name of the service
+	Image     string         `gorm:"not null" json:"image"`     // Image of the docker container
+	Env       string         `json:"env"`                       // Environment variables
+	Volume    string         `gorm:"not null" json:"volume"`    // Volume information
+	Ports     string         `gorm:"not null" json:"ports"`     // Ports information
 }
